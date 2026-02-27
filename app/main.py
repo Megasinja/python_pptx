@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import contextlib
 import json
 import sys
@@ -15,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
 EXEC_TIMEOUT_SECONDS = 10
-PLOT_MARKER_PREFIX = "__PLOT_PNG__:"
+JUPYTER_MESSAGE_PREFIX = "__JUPYTER_MSG__:"
 
 app = FastAPI(title="Python Training Prototype")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -56,19 +57,23 @@ async def stream_pipe(
             break
         decoded = chunk.decode("utf-8", errors="replace")
 
-        if stream_type == "stdout" and decoded.startswith(PLOT_MARKER_PREFIX):
-            marker_payload = decoded[len(PLOT_MARKER_PREFIX) :].strip()
-            index_str, _, plot_data = marker_payload.partition(":")
-            if plot_data:
-                try:
-                    plot_index: int | None = int(index_str)
-                except ValueError:
-                    plot_index = None
-                await safe_send_json(
-                    websocket,
-                    {"type": "plot", "index": plot_index, "data": plot_data},
-                )
-                continue
+        if stream_type == "stdout" and decoded.startswith(JUPYTER_MESSAGE_PREFIX):
+            marker_payload = decoded[len(JUPYTER_MESSAGE_PREFIX) :].strip()
+            message_type, _, encoded_payload = marker_payload.partition(":")
+            if encoded_payload:
+                with contextlib.suppress(Exception):
+                    payload_json = base64.b64decode(encoded_payload.encode("ascii")).decode("utf-8")
+                    payload = json.loads(payload_json)
+                    if message_type == "display_data":
+                        await safe_send_json(
+                            websocket,
+                            {
+                                "type": "display_data",
+                                "data": payload.get("data", {}),
+                                "metadata": payload.get("metadata", {}),
+                            },
+                        )
+                        continue
 
         await safe_send_json(
             websocket,
@@ -85,14 +90,16 @@ def build_exec_script(user_code: str) -> str:
         f"""
         import base64
         import io
-        import os
-        import sys
+        import json
         import traceback
 
-        os.environ.setdefault("MPLBACKEND", "Agg")
         USER_CODE = {encoded_code}
-        user_globals = {{"__name__": "__main__"}}
+        def _emit_message(message_type, payload):
+            raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            encoded = base64.b64encode(raw).decode("ascii")
+            print("{JUPYTER_MESSAGE_PREFIX}" + message_type + ":" + encoded)
 
+        user_globals = {{"__name__": "__main__"}}
         try:
             exec(compile(USER_CODE, "<user_code>", "exec"), user_globals, user_globals)
         except Exception:
@@ -108,13 +115,23 @@ def build_exec_script(user_code: str) -> str:
                 figure = manager.canvas.figure
                 buffer = io.BytesIO()
                 figure.savefig(buffer, format="png", bbox_inches="tight")
-                encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-                print("{PLOT_MARKER_PREFIX}" + str(index) + ":" + encoded)
+                encoded_png = base64.b64encode(buffer.getvalue()).decode("ascii")
+
+                _emit_message(
+                    "display_data",
+                    {{
+                        "data": {{
+                            "image/png": encoded_png,
+                            "text/plain": "<Figure " + str(index) + ">",
+                        }},
+                        "metadata": {{}},
+                    }},
+                )
 
             if managers:
                 plt.close("all")
         except Exception:
-            # Ignore plot export failures to keep normal execution behavior.
+            # Keep normal execution behavior even if display export fails.
             pass
         """
     )

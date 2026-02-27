@@ -700,6 +700,38 @@ print("done")
         consoleEl.scrollTop = consoleEl.scrollHeight;
       }
 
+      function appendDisplayData(dataBundle, metadataBundle) {
+        const data = dataBundle || {};
+        const metadata = metadataBundle || {};
+
+        if (typeof data["image/png"] === "string" && data["image/png"].length > 0) {
+          const wrap = document.createElement("div");
+          wrap.className = "plot-wrap";
+
+          const caption = document.createElement("span");
+          caption.className = "plot-caption";
+          caption.textContent = "display_data image/png";
+
+          const img = document.createElement("img");
+          img.className = "plot-image";
+          img.alt = "display_data image/png";
+          img.src = `data:image/png;base64,${data["image/png"]}`;
+
+          wrap.appendChild(caption);
+          wrap.appendChild(img);
+          consoleEl.appendChild(wrap);
+          consoleEl.scrollTop = consoleEl.scrollHeight;
+          return;
+        }
+
+        if (typeof data["text/plain"] === "string" && data["text/plain"].length > 0) {
+          appendConsole(`${data["text/plain"]}\n`, "stdout");
+          return;
+        }
+
+        appendConsole(`[display_data] ${JSON.stringify({ data, metadata })}\n`, "event");
+      }
+
       function getCodeValue() {
         if (monacoEditor) return monacoEditor.getValue();
         if (fallbackEditor) return fallbackEditor.value;
@@ -924,6 +956,11 @@ print("done")
 
           if (msg.type === "plot") {
             appendPlot(msg.data, msg.index);
+            return;
+          }
+
+          if (msg.type === "display_data") {
+            appendDisplayData(msg.data, msg.metadata);
             return;
           }
 
