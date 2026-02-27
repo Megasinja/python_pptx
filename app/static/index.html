@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Python研修プロトタイプ</title>
+    <style>
+      :root {
+        --bg-main: #f4f7fb;
+        --panel: #ffffff;
+        --line: #d8e1ee;
+        --accent: #1d4ed8;
+        --danger: #c81e1e;
+        --text: #18212f;
+        --muted: #566277;
+        --menu-height: 52px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "BIZ UDPGothic", "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+        background: linear-gradient(130deg, #e8eef9, #f8fafc 42%, #edf5ff);
+        color: var(--text);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .shell {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .menu-bar {
+        height: var(--menu-height);
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        background: linear-gradient(180deg, #c9e0f6, #b9d6f2);
+        border-bottom: 1px solid #98b9d7;
+        user-select: none;
+        position: relative;
+        z-index: 30;
+      }
+
+      .menu-list {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .menu-title {
+        font-weight: 800;
+        font-size: 18px;
+        padding: 0 10px;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+
+      .menu-item {
+        border: 0;
+        background: transparent;
+        color: #0f1724;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        padding: 6px 10px;
+        border-radius: 7px;
+        white-space: nowrap;
+      }
+
+      .menu-item:hover,
+      .menu-item.active {
+        background: rgba(18, 32, 52, 0.13);
+        cursor: pointer;
+      }
+
+      .menu-settings {
+        position: relative;
+      }
+
+      .settings-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        min-width: 260px;
+        background: #ffffff;
+        border: 1px solid #bdd0e8;
+        border-radius: 10px;
+        box-shadow: 0 14px 30px rgba(20, 34, 52, 0.2);
+        padding: 10px;
+      }
+
+      .settings-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: #4b5e78;
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+      }
+
+      .settings-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #16233a;
+        padding: 8px 6px;
+        border-radius: 7px;
+      }
+
+      .settings-item:hover {
+        background: #eef4ff;
+      }
+
+      .settings-item input {
+        width: 16px;
+        height: 16px;
+      }
+
+      .app {
+        display: flex;
+        gap: 14px;
+        height: calc(100vh - var(--menu-height));
+        padding: 14px;
+      }
+
+      .pane {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(24, 33, 47, 0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .left-pane {
+        flex: 1.05;
+        min-width: 360px;
+      }
+
+      .right-pane {
+        flex: 0.95;
+        min-width: 320px;
+      }
+
+      .pane-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        font-weight: 700;
+      }
+
+      .status-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .status.running {
+        color: var(--accent);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .connection-hint {
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--line);
+        color: #1d406f;
+        background: #ecf3ff;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font: inherit;
+        font-weight: 700;
+        background: #e9edf5;
+        color: #1c2a3e;
+        cursor: pointer;
+      }
+
+      .button:hover {
+        filter: brightness(0.97);
+      }
+
+      .button.primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .button.danger {
+        background: #f9e7e7;
+        border-color: #f3cbcb;
+        color: #8f1c1c;
+      }
+
+      .button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .editor {
+        height: 320px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .monaco-editor .hover-comment-highlight {
+        color: #6a9955 !important;
+        font-style: normal !important;
+      }
+
+      .editor-fallback {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        margin: 0;
+        padding: 14px;
+        resize: none;
+        font-family: "UDEV Gothic 35NF", "Menlo", "Consolas", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #132033;
+      }
+
+      .console {
+        flex: 1;
+        padding: 12px 14px;
+        overflow: auto;
+        background: #0d1726;
+        color: #e7eefc;
+        font-family: "UDEV Gothic 35NF", "Menlo", "Consolas", monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+
+      .console .stdout {
+        color: #d9e6ff;
+      }
+
+      .console .stderr {
+        color: #ffb5b5;
+      }
+
+      .console .event {
+        color: #8fc5ff;
+      }
+
+      .canvas-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        background: #f7fbff;
+      }
+
+      .tool-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 6px;
+        border: 1px solid #d7e3f3;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .tool-button {
+        appearance: none;
+        border: 1px solid #c8d8ee;
+        border-radius: 7px;
+        background: #f5f8ff;
+        color: #163156;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      .tool-button:hover {
+        filter: brightness(0.97);
+      }
+
+      .tool-button.active {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+        color: #ffffff;
+      }
+
+      .zoom-value {
+        min-width: 56px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        color: #183258;
+      }
+
+      .brush-size {
+        width: 92px;
+      }
+
+      .file-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .file-label input {
+        display: none;
+      }
+
+      .canvas-wrap {
+        position: relative;
+        flex: 1;
+        margin: 12px;
+        border: 1px solid #c5d3e8;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .canvas-wrap canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: #f8fbff;
+      }
+
+      .hint {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        pointer-events: none;
+        color: #63708a;
+        background: linear-gradient(45deg, rgba(255, 255, 255, 0.35), rgba(232, 241, 255, 0.35));
+        font-size: 14px;
+      }
+
+      .hint.hidden {
+        display: none;
+      }
+
+      .canvas-wrap.drag-over {
+        outline: 2px dashed var(--accent);
+        outline-offset: -6px;
+      }
+
+      .canvas-wrap.laser-active {
+        cursor: none;
+      }
+
+      .laser-dot {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        pointer-events: none;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        background: #ff3131;
+        box-shadow: 0 0 0 8px rgba(255, 49, 49, 0.25), 0 0 14px rgba(255, 49, 49, 0.8);
+        transform: translate(-50%, -50%);
+        left: -100px;
+        top: -100px;
+        opacity: 0;
+        transition: opacity 80ms linear;
+      }
+
+      .laser-dot.visible {
+        opacity: 1;
+      }
+
+      @media (max-width: 980px) {
+        .menu-title {
+          font-size: 16px;
+        }
+
+        .menu-item {
+          font-size: 13px;
+        }
+
+        .app {
+          flex-direction: column;
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .left-pane,
+        .right-pane {
+          min-width: 0;
+          min-height: 44vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="menu-bar">
+        <div class="menu-list">
+          <span class="menu-title">Code</span>
+          <button type="button" class="menu-item">File</button>
+          <button type="button" class="menu-item">Edit</button>
+          <button type="button" class="menu-item">Selection</button>
+          <button type="button" class="menu-item">View</button>
+          <button type="button" class="menu-item">Go</button>
+          <button type="button" class="menu-item">Run</button>
+          <button type="button" class="menu-item">Terminal</button>
+          <button type="button" class="menu-item">Window</button>
+          <button type="button" class="menu-item">Help</button>
+          <div id="settingsMenuWrap" class="menu-settings">
+            <button id="settingsTab" type="button" class="menu-item">設定</button>
+            <div id="settingsPanel" class="settings-panel" hidden>
+              <div class="settings-title">EDITOR SETTINGS</div>
+              <label class="settings-item">
+                <input id="showAllCommentsToggle" type="checkbox" />
+                コメントを常に表示（従来）
+              </label>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="app">
+        <section class="pane left-pane">
+          <div class="pane-header">
+            <span>Python実行エリア</span>
+            <div class="status-group">
+              <span id="pythonInfo" class="status"></span>
+              <span id="runStatus" class="status">接続中...</span>
+            </div>
+          </div>
+          <div class="controls">
+            <button id="runBtn" class="button primary">実行</button>
+            <button id="stopBtn" class="button danger" disabled>停止</button>
+            <button id="clearConsoleBtn" class="button">ログをクリア</button>
+          </div>
+          <div id="connectionHint" class="connection-hint">
+            接続できない場合: `python -m uvicorn app.main:app --reload` を実行し、`http://127.0.0.1:8000` で開いてください。
+          </div>
+          <div id="codeEditor" class="editor"></div>
+          <div id="console" class="console"></div>
+        </section>
+
+        <section class="pane right-pane">
+          <div class="pane-header">
+            <span>Canvas資料エリア</span>
+            <span class="status">画像・テキスト・ペン・レーザー対応</span>
+          </div>
+          <div class="canvas-toolbar">
+            <div class="tool-group">
+              <label class="file-label button primary">
+                画像を追加
+                <input id="fileInput" type="file" accept="image/*" multiple />
+              </label>
+              <button id="addTextBtn" class="button">テキスト追加</button>
+            </div>
+            <div class="tool-group">
+              <button id="selectToolBtn" class="tool-button active">選択</button>
+              <button id="penToolBtn" class="tool-button">ペン</button>
+              <input id="brushSizeInput" class="brush-size" type="range" min="1" max="24" value="4" />
+              <button id="laserToolBtn" class="tool-button">レーザー</button>
+            </div>
+            <div class="tool-group">
+              <button id="zoomOutBtn" class="tool-button">-</button>
+              <span id="zoomValue" class="zoom-value">100%</span>
+              <button id="zoomInBtn" class="tool-button">+</button>
+              <button id="resetZoomBtn" class="tool-button">100%</button>
+            </div>
+            <button id="clearCanvasBtn" class="button">Canvasをクリア</button>
+          </div>
+          <div id="canvasWrap" class="canvas-wrap">
+            <canvas id="materialCanvas"></canvas>
+            <div id="laserDot" class="laser-dot" aria-hidden="true"></div>
+            <div id="canvasHint" class="hint">
+              右側に教材を配置できます<br />
+              画像追加 / テキスト追加 / ペン / レーザー / ズーム
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/loader.min.js"></script>
+    <script>
+      const DEFAULT_CODE = `import time
+
+for i in range(5):
+    print(f"step {i}")
+    time.sleep(0.7)
+
+print("done")
+`;
+
+      const runStatusEl = document.getElementById("runStatus");
+      const pythonInfoEl = document.getElementById("pythonInfo");
+      const runBtn = document.getElementById("runBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const clearConsoleBtn = document.getElementById("clearConsoleBtn");
+      const editorMount = document.getElementById("codeEditor");
+      const consoleEl = document.getElementById("console");
+      const settingsMenuWrapEl = document.getElementById("settingsMenuWrap");
+      const settingsTabEl = document.getElementById("settingsTab");
+      const settingsPanelEl = document.getElementById("settingsPanel");
+      const showAllCommentsToggleEl = document.getElementById("showAllCommentsToggle");
+
+      let socket = null;
+      let running = false;
+      let reconnectTimer = null;
+      let reconnectAttempt = 0;
+      let disconnectLogged = false;
+
+      let monacoEditor = null;
+      let fallbackEditor = null;
+      let commentHoverDecorationIds = [];
+      let currentCommentHoverKey = "";
+      let commentDisplayMode = "hover";
+
+      function setStatus(text, mode = "normal") {
+        runStatusEl.textContent = text;
+        runStatusEl.classList.remove("running", "error");
+        if (mode === "running") runStatusEl.classList.add("running");
+        if (mode === "error") runStatusEl.classList.add("error");
+      }
+
+      function appendConsole(text, kind = "stdout") {
+        const chunk = document.createElement("span");
+        chunk.className = kind;
+        chunk.textContent = text;
+        consoleEl.appendChild(chunk);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+
+      function appendEvent(text) {
+        appendConsole(`[event] ${text}\n`, "event");
+      }
+
+      function getCodeValue() {
+        if (monacoEditor) return monacoEditor.getValue();
+        if (fallbackEditor) return fallbackEditor.value;
+        return "";
+      }
+
+      function setSettingsPanelOpen(open) {
+        settingsPanelEl.hidden = !open;
+        settingsTabEl.classList.toggle("active", open);
+      }
+
+      function applyCommentDisplayMode(mode) {
+        const normalized = mode === "full" ? "full" : "hover";
+        commentDisplayMode = normalized;
+        showAllCommentsToggleEl.checked = normalized === "full";
+
+        if (!window.monaco || !monacoEditor) return;
+        window.monaco.editor.setTheme(
+          normalized === "full" ? "training-dark-default" : "training-dark-muted"
+        );
+        if (normalized === "full") {
+          applyCommentHoverDecoration(null);
+        }
+      }
+
+      function updateButtons() {
+        const connected = socket && socket.readyState === WebSocket.OPEN;
+        runBtn.disabled = running || !connected;
+        stopBtn.disabled = !running;
+      }
+
+      async function fetchHealth() {
+        try {
+          const response = await fetch("/api/health", { cache: "no-store" });
+          if (!response.ok) return;
+          const payload = await response.json();
+          pythonInfoEl.textContent = `Python ${payload.pythonVersion}`;
+        } catch (_error) {
+          // No-op on transient health fetch errors.
+        }
+      }
+
+      function scheduleReconnect() {
+        if (reconnectTimer) return;
+        reconnectAttempt += 1;
+        const delay = Math.min(10000, 1000 * 2 ** Math.min(reconnectAttempt - 1, 3));
+        setStatus(`未接続（${Math.round(delay / 1000)}秒後に再接続）`, "error");
+        reconnectTimer = window.setTimeout(() => {
+          reconnectTimer = null;
+          connectSocket();
+        }, delay);
+      }
+
+      function connectSocket() {
+        if (!window.location.host || !window.location.protocol.startsWith("http")) {
+          setStatus("サーバー経由で開いてください", "error");
+          appendConsole(
+            "[error] file:// では動作しません。`python -m uvicorn app.main:app --reload` 実行後に http://127.0.0.1:8000 を開いてください。\n",
+            "stderr"
+          );
+          updateButtons();
+          return;
+        }
+
+        if (socket && socket.readyState === WebSocket.OPEN) return;
+        if (socket && socket.readyState === WebSocket.CONNECTING) return;
+
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        socket = new WebSocket(`${protocol}//${window.location.host}/ws/run`);
+
+        socket.addEventListener("open", () => {
+          reconnectAttempt = 0;
+          disconnectLogged = false;
+          if (reconnectTimer) {
+            window.clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          setStatus("接続済み");
+          fetchHealth();
+          appendEvent("WebSocket connected");
+          updateButtons();
+        });
+
+        socket.addEventListener("close", () => {
+          running = false;
+          updateButtons();
+          if (!disconnectLogged) {
+            appendEvent("WebSocket disconnected. バックエンドを起動してください。");
+            disconnectLogged = true;
+          }
+          scheduleReconnect();
+        });
+
+        socket.addEventListener("message", (event) => {
+          let msg;
+          try {
+            msg = JSON.parse(event.data);
+          } catch {
+            appendConsole(`[parse error] ${event.data}\n`, "stderr");
+            return;
+          }
+
+          if (msg.type === "stdout") {
+            appendConsole(msg.data, "stdout");
+            return;
+          }
+
+          if (msg.type === "stderr") {
+            appendConsole(msg.data, "stderr");
+            return;
+          }
+
+          if (msg.type === "error") {
+            appendConsole(`[error] ${msg.message}\n`, "stderr");
+            setStatus("エラー", "error");
+            running = false;
+            updateButtons();
+            return;
+          }
+
+          if (msg.type === "status") {
+            if (msg.state === "started") {
+              running = true;
+              setStatus("実行中...", "running");
+              appendEvent("Execution started");
+            } else if (msg.state === "aborting") {
+              setStatus("停止処理中...", "running");
+            } else if (msg.state === "aborted") {
+              running = false;
+              setStatus("停止しました");
+              appendEvent("Execution aborted");
+            } else if (msg.state === "timeout") {
+              running = false;
+              setStatus("タイムアウト", "error");
+              appendEvent(msg.message || "Execution timeout");
+            } else if (msg.state === "finished") {
+              running = false;
+              const code = Number.isInteger(msg.returnCode) ? ` (code=${msg.returnCode})` : "";
+              setStatus(`完了${code}`);
+              appendEvent(`Execution finished${code}`);
+            }
+            updateButtons();
+          }
+        });
+      }
+
+      function createFallbackEditor() {
+        const textarea = document.createElement("textarea");
+        textarea.className = "editor-fallback";
+        textarea.spellcheck = false;
+        textarea.value = DEFAULT_CODE;
+        editorMount.appendChild(textarea);
+        fallbackEditor = textarea;
+        showAllCommentsToggleEl.disabled = true;
+        appendEvent("Monaco Editor を読み込めなかったため、標準エディタで動作中。");
+        appendEvent("コメント表示設定は Monaco Editor 使用時のみ有効です。");
+      }
+
+      function loadMonaco() {
+        return new Promise((resolve, reject) => {
+          if (window.monaco && window.monaco.editor) {
+            resolve();
+            return;
+          }
+          if (typeof window.require !== "function") {
+            reject(new Error("Monaco loader is not available"));
+            return;
+          }
+          window.require.config({
+            paths: {
+              vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs",
+            },
+          });
+          window.require(["vs/editor/editor.main"], resolve, reject);
+        });
+      }
+
+      function configureMonacoThemes() {
+        const commonColors = {
+          "editor.background": "#0d1726",
+          "editor.foreground": "#d9e6ff",
+          "editorLineNumber.foreground": "#586884",
+          "editorLineNumber.activeForeground": "#8fb2ff",
+          "editor.selectionBackground": "#314868",
+        };
+
+        window.monaco.editor.defineTheme("training-dark-muted", {
+          base: "vs-dark",
+          inherit: true,
+          rules: [
+            { token: "comment", foreground: "1D2736" },
+            { token: "comment.line", foreground: "1D2736" },
+            { token: "comment.block", foreground: "1D2736" },
+          ],
+          colors: commonColors,
+        });
+
+        window.monaco.editor.defineTheme("training-dark-default", {
+          base: "vs-dark",
+          inherit: true,
+          rules: [
+            { token: "comment", foreground: "6A9955" },
+            { token: "comment.line", foreground: "6A9955" },
+            { token: "comment.block", foreground: "6A9955" },
+          ],
+          colors: commonColors,
+        });
+      }
+
+      function tokenStart(token) {
+        if (typeof token.startIndex === "number") return token.startIndex;
+        if (typeof token.offset === "number") return token.offset;
+        return 0;
+      }
+
+      function getCommentRangeAtPosition(position) {
+        if (!monacoEditor || !window.monaco) return null;
+        const model = monacoEditor.getModel();
+        if (!model) return null;
+
+        const lineContent = model.getLineContent(position.lineNumber);
+        if (!lineContent) return null;
+
+        const pointerOffset = Math.max(0, Math.min(lineContent.length - 1, position.column - 1));
+        const tokenized = window.monaco.editor.tokenize(lineContent, model.getLanguageId());
+        const tokens = Array.isArray(tokenized) && tokenized[0] ? tokenized[0] : [];
+        if (!tokens.length) return null;
+
+        for (let i = 0; i < tokens.length; i += 1) {
+          const start = tokenStart(tokens[i]);
+          const end =
+            i + 1 < tokens.length ? Math.max(start, tokenStart(tokens[i + 1])) : lineContent.length;
+          if (pointerOffset < start || pointerOffset >= end) continue;
+
+          const scope = String(tokens[i].scopes || tokens[i].type || "");
+          if (!scope.includes("comment")) return null;
+
+          return new window.monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1);
+        }
+        return null;
+      }
+
+      function applyCommentHoverDecoration(range) {
+        if (!monacoEditor || !window.monaco) return;
+        if (commentDisplayMode !== "hover") {
+          if (commentHoverDecorationIds.length > 0) {
+            commentHoverDecorationIds = monacoEditor.deltaDecorations(commentHoverDecorationIds, []);
+          }
+          currentCommentHoverKey = "";
+          return;
+        }
+
+        const nextKey = range
+          ? `${range.startLineNumber}:${range.startColumn}:${range.endLineNumber}:${range.endColumn}`
+          : "";
+        if (nextKey === currentCommentHoverKey) return;
+        currentCommentHoverKey = nextKey;
+
+        const decorations = range
+          ? [
+              {
+                range,
+                options: {
+                  inlineClassName: "hover-comment-highlight",
+                },
+              },
+            ]
+          : [];
+
+        commentHoverDecorationIds = monacoEditor.deltaDecorations(commentHoverDecorationIds, decorations);
+      }
+
+      function setupCommentHoverBehavior() {
+        if (!monacoEditor) return;
+        monacoEditor.onMouseMove((event) => {
+          if (commentDisplayMode !== "hover") {
+            applyCommentHoverDecoration(null);
+            return;
+          }
+
+          const pos = event.target && event.target.position;
+          if (!pos) {
+            applyCommentHoverDecoration(null);
+            return;
+          }
+          applyCommentHoverDecoration(getCommentRangeAtPosition(pos));
+        });
+        monacoEditor.onMouseLeave(() => {
+          applyCommentHoverDecoration(null);
+        });
+        monacoEditor.onDidChangeModelContent(() => {
+          applyCommentHoverDecoration(null);
+        });
+      }
+
+      async function initEditor() {
+        try {
+          await loadMonaco();
+          configureMonacoThemes();
+          monacoEditor = window.monaco.editor.create(editorMount, {
+            value: DEFAULT_CODE,
+            language: "python",
+            theme: "training-dark-muted",
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: "on",
+            tabSize: 4,
+            insertSpaces: true,
+          });
+          setupCommentHoverBehavior();
+          applyCommentDisplayMode(commentDisplayMode);
+        } catch (_error) {
+          createFallbackEditor();
+        }
+      }
+
+      runBtn.addEventListener("click", () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          appendConsole("[error] WebSocket is not connected.\n", "stderr");
+          return;
+        }
+        if (running) return;
+        consoleEl.textContent = "";
+        socket.send(
+          JSON.stringify({
+            type: "run",
+            code: getCodeValue(),
+          })
+        );
+      });
+
+      stopBtn.addEventListener("click", () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        socket.send(JSON.stringify({ type: "abort" }));
+      });
+
+      clearConsoleBtn.addEventListener("click", () => {
+        consoleEl.textContent = "";
+      });
+
+      settingsTabEl.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setSettingsPanelOpen(settingsPanelEl.hidden);
+      });
+
+      showAllCommentsToggleEl.addEventListener("change", () => {
+        applyCommentDisplayMode(showAllCommentsToggleEl.checked ? "full" : "hover");
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!settingsMenuWrapEl.contains(event.target)) {
+          setSettingsPanelOpen(false);
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          setSettingsPanelOpen(false);
+        }
+      });
+
+      applyCommentDisplayMode("hover");
+
+      initEditor().finally(() => {
+        connectSocket();
+        updateButtons();
+      });
+
+      // ---- Canvas area ----
+      const fileInput = document.getElementById("fileInput");
+      const addTextBtn = document.getElementById("addTextBtn");
+      const clearCanvasBtn = document.getElementById("clearCanvasBtn");
+      const selectToolBtn = document.getElementById("selectToolBtn");
+      const penToolBtn = document.getElementById("penToolBtn");
+      const brushSizeInput = document.getElementById("brushSizeInput");
+      const laserToolBtn = document.getElementById("laserToolBtn");
+      const zoomOutBtn = document.getElementById("zoomOutBtn");
+      const zoomInBtn = document.getElementById("zoomInBtn");
+      const resetZoomBtn = document.getElementById("resetZoomBtn");
+      const zoomValueEl = document.getElementById("zoomValue");
+      const canvasWrap = document.getElementById("canvasWrap");
+      const canvasHint = document.getElementById("canvasHint");
+      const canvasElement = document.getElementById("materialCanvas");
+      const laserDotEl = document.getElementById("laserDot");
+
+      const MIN_CANVAS_ZOOM = 0.4;
+      const MAX_CANVAS_ZOOM = 3.0;
+      let board = null;
+      let boardMode = "select";
+      let boardWidth = 0;
+      let boardHeight = 0;
+      let canvasZoom = 1;
+
+      function clampCanvasZoom(value) {
+        return Math.max(MIN_CANVAS_ZOOM, Math.min(MAX_CANVAS_ZOOM, value));
+      }
+
+      function hasBoardContent() {
+        return Boolean(board && board.getObjects().length > 0);
+      }
+
+      function updateCanvasHint() {
+        canvasHint.classList.toggle("hidden", hasBoardContent());
+      }
+
+      function hideLaserDot() {
+        laserDotEl.classList.remove("visible");
+        laserDotEl.style.left = "-100px";
+        laserDotEl.style.top = "-100px";
+      }
+
+      function placeLaserDot(clientX, clientY) {
+        const rect = canvasWrap.getBoundingClientRect();
+        laserDotEl.style.left = `${clientX - rect.left}px`;
+        laserDotEl.style.top = `${clientY - rect.top}px`;
+        laserDotEl.classList.add("visible");
+      }
+
+      function updateCanvasToolButtons() {
+        selectToolBtn.classList.toggle("active", boardMode === "select");
+        penToolBtn.classList.toggle("active", boardMode === "pen");
+        laserToolBtn.classList.toggle("active", boardMode === "laser");
+      }
+
+      function setObjectsInteractive(enabled) {
+        if (!board) return;
+
+        board.selection = enabled;
+        board.skipTargetFind = !enabled;
+        if (!enabled) {
+          board.discardActiveObject();
+        }
+        board.forEachObject((obj) => {
+          obj.selectable = enabled;
+          obj.evented = enabled;
+          if (obj.type === "textbox") {
+            obj.editable = enabled;
+          }
+          obj.hoverCursor = enabled ? "move" : "default";
+        });
+      }
+
+      function setCanvasMode(mode) {
+        if (!board) return;
+
+        const nextMode = mode === "pen" || mode === "laser" ? mode : "select";
+        boardMode = nextMode;
+        board.isDrawingMode = boardMode === "pen";
+
+        if (boardMode === "select") {
+          setObjectsInteractive(true);
+          canvasWrap.classList.remove("laser-active");
+          hideLaserDot();
+        } else if (boardMode === "pen") {
+          setObjectsInteractive(false);
+          canvasWrap.classList.remove("laser-active");
+          hideLaserDot();
+          if (board.freeDrawingBrush) {
+            board.freeDrawingBrush.color = "#2c65f5";
+            board.freeDrawingBrush.width = Number(brushSizeInput.value || 4);
+          }
+        } else {
+          setObjectsInteractive(false);
+          canvasWrap.classList.add("laser-active");
+        }
+
+        updateCanvasToolButtons();
+        board.requestRenderAll();
+      }
+
+      function applyCanvasZoom(value) {
+        if (!board || !window.fabric) return;
+
+        canvasZoom = clampCanvasZoom(value);
+        const center = new window.fabric.Point(board.getWidth() / 2, board.getHeight() / 2);
+        board.zoomToPoint(center, canvasZoom);
+        zoomValueEl.textContent = `${Math.round(canvasZoom * 100)}%`;
+        board.requestRenderAll();
+      }
+
+      function resizeBoardToWrapper() {
+        if (!board) return;
+
+        const rect = canvasWrap.getBoundingClientRect();
+        const nextWidth = Math.max(320, Math.floor(rect.width));
+        const nextHeight = Math.max(220, Math.floor(rect.height));
+        if (nextWidth === boardWidth && nextHeight === boardHeight) return;
+
+        board.setWidth(nextWidth);
+        board.setHeight(nextHeight);
+
+        if (boardWidth > 0 && boardHeight > 0) {
+          const scaleX = nextWidth / boardWidth;
+          const scaleY = nextHeight / boardHeight;
+          board.getObjects().forEach((obj) => {
+            obj.left *= scaleX;
+            obj.top *= scaleY;
+            obj.scaleX *= scaleX;
+            obj.scaleY *= scaleY;
+            obj.setCoords();
+          });
+        }
+
+        boardWidth = nextWidth;
+        boardHeight = nextHeight;
+        applyCanvasZoom(canvasZoom);
+        board.requestRenderAll();
+        updateCanvasHint();
+      }
+
+      function addTextBox() {
+        if (!board || !window.fabric) return;
+
+        const text = new window.fabric.Textbox("テキスト", {
+          left: board.getWidth() * 0.2,
+          top: board.getHeight() * 0.2,
+          width: 220,
+          fontSize: 30,
+          fontWeight: "700",
+          fill: "#11233f",
+          backgroundColor: "rgba(255,255,255,0.55)",
+          borderColor: "#1d4ed8",
+          cornerColor: "#1d4ed8",
+          cornerStyle: "circle",
+          transparentCorners: false,
+          editable: true,
+        });
+        board.add(text);
+        board.setActiveObject(text);
+        setCanvasMode("select");
+        updateCanvasHint();
+      }
+
+      function addImageToBoard(file) {
+        if (!board || !window.fabric || !file.type.startsWith("image/")) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          window.fabric.Image.fromURL(
+            String(reader.result),
+            (image) => {
+              const maxW = board.getWidth() * 0.65;
+              const maxH = board.getHeight() * 0.65;
+              const baseW = image.width || maxW;
+              const baseH = image.height || maxH;
+              const scale = Math.min(maxW / baseW, maxH / baseH, 1);
+
+              image.set({
+                left: (board.getWidth() - baseW * scale) / 2,
+                top: (board.getHeight() - baseH * scale) / 2,
+                cornerColor: "#1d4ed8",
+                borderColor: "#1d4ed8",
+                cornerStyle: "circle",
+                transparentCorners: false,
+              });
+              image.scale(scale);
+              board.add(image);
+              board.setActiveObject(image);
+              setCanvasMode("select");
+              updateCanvasHint();
+              board.requestRenderAll();
+            },
+            { crossOrigin: "anonymous" }
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function clearBoard() {
+        if (!board) return;
+        board.clear();
+        board.setBackgroundColor("#f8fbff", board.renderAll.bind(board));
+        canvasZoom = 1;
+        zoomValueEl.textContent = "100%";
+        setCanvasMode("select");
+        updateCanvasHint();
+      }
+
+      function initCanvasBoard() {
+        if (!window.fabric) {
+          appendEvent("Fabric.js を読み込めなかったため、Canvas拡張機能は無効です。");
+          return;
+        }
+
+        board = new window.fabric.Canvas(canvasElement, {
+          backgroundColor: "#f8fbff",
+          preserveObjectStacking: true,
+          selection: true,
+        });
+        board.freeDrawingBrush = new window.fabric.PencilBrush(board);
+        board.freeDrawingBrush.color = "#2c65f5";
+        board.freeDrawingBrush.width = Number(brushSizeInput.value || 4);
+
+        board.on("object:added", updateCanvasHint);
+        board.on("object:removed", updateCanvasHint);
+        board.on("path:created", updateCanvasHint);
+
+        resizeBoardToWrapper();
+        setCanvasMode("select");
+        applyCanvasZoom(1);
+      }
+
+      fileInput.addEventListener("change", (event) => {
+        const files = Array.from(event.target.files || []);
+        files.forEach(addImageToBoard);
+        event.target.value = "";
+      });
+
+      addTextBtn.addEventListener("click", () => {
+        addTextBox();
+      });
+
+      clearCanvasBtn.addEventListener("click", () => {
+        clearBoard();
+      });
+
+      selectToolBtn.addEventListener("click", () => {
+        setCanvasMode("select");
+      });
+
+      penToolBtn.addEventListener("click", () => {
+        setCanvasMode(boardMode === "pen" ? "select" : "pen");
+      });
+
+      laserToolBtn.addEventListener("click", () => {
+        setCanvasMode(boardMode === "laser" ? "select" : "laser");
+      });
+
+      brushSizeInput.addEventListener("input", () => {
+        if (board && board.freeDrawingBrush) {
+          board.freeDrawingBrush.width = Number(brushSizeInput.value || 4);
+        }
+      });
+
+      zoomInBtn.addEventListener("click", () => {
+        applyCanvasZoom(canvasZoom * 1.15);
+      });
+
+      zoomOutBtn.addEventListener("click", () => {
+        applyCanvasZoom(canvasZoom * 0.87);
+      });
+
+      resetZoomBtn.addEventListener("click", () => {
+        applyCanvasZoom(1);
+      });
+
+      canvasWrap.addEventListener(
+        "wheel",
+        (event) => {
+          if (!board) return;
+          event.preventDefault();
+          const directionScale = event.deltaY < 0 ? 1.1 : 0.9;
+          applyCanvasZoom(canvasZoom * directionScale);
+        },
+        { passive: false }
+      );
+
+      canvasWrap.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        canvasWrap.classList.add("drag-over");
+      });
+
+      canvasWrap.addEventListener("dragleave", () => {
+        canvasWrap.classList.remove("drag-over");
+      });
+
+      canvasWrap.addEventListener("drop", (event) => {
+        event.preventDefault();
+        canvasWrap.classList.remove("drag-over");
+        const files = Array.from(event.dataTransfer?.files || []);
+        files.forEach(addImageToBoard);
+      });
+
+      canvasWrap.addEventListener("pointermove", (event) => {
+        if (boardMode !== "laser") return;
+        placeLaserDot(event.clientX, event.clientY);
+      });
+
+      canvasWrap.addEventListener("pointerleave", () => {
+        if (boardMode === "laser") hideLaserDot();
+      });
+
+      window.addEventListener("resize", () => {
+        resizeBoardToWrapper();
+      });
+
+      initCanvasBoard();
+    </script>
+  </body>
+</html>
