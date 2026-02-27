@@ -28,6 +28,18 @@
         color: var(--text);
       }
 
+      body.resizing-col,
+      body.resizing-col * {
+        cursor: col-resize !important;
+        user-select: none !important;
+      }
+
+      body.resizing-row,
+      body.resizing-row * {
+        cursor: row-resize !important;
+        user-select: none !important;
+      }
+
       [hidden] {
         display: none !important;
       }
@@ -163,8 +175,9 @@
       }
 
       .app {
-        display: flex;
-        gap: 14px;
+        display: grid;
+        grid-template-columns: minmax(360px, 1.05fr) 12px minmax(320px, 0.95fr);
+        gap: 0;
         height: calc(100vh - var(--menu-height));
         padding: 14px;
       }
@@ -180,13 +193,32 @@
       }
 
       .left-pane {
-        flex: 1.05;
         min-width: 360px;
       }
 
       .right-pane {
-        flex: 0.95;
         min-width: 320px;
+      }
+
+      .pane-resize-handle {
+        width: 12px;
+        margin: 0 6px;
+        border-radius: 10px;
+        border: 1px solid #c4d4e8;
+        background: linear-gradient(180deg, #edf3fd, #dfeaf8);
+        cursor: col-resize;
+        position: relative;
+      }
+
+      .pane-resize-handle::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 2px;
+        height: 52px;
+        border-radius: 2px;
+        background: #8fa8c6;
       }
 
       .pane-header {
@@ -299,8 +331,8 @@
       }
 
       .editor {
-        height: 320px;
-        border-bottom: 1px solid var(--line);
+        height: 100%;
+        min-height: 0;
       }
 
       .monaco-editor .hover-comment-highlight {
@@ -322,7 +354,7 @@
       }
 
       .console {
-        flex: 1;
+        min-height: 0;
         padding: 12px 14px;
         overflow: auto;
         background: #0d1726;
@@ -364,6 +396,33 @@
         border: 1px solid #314867;
         border-radius: 8px;
         background: #ffffff;
+      }
+
+      .left-split-area {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: minmax(180px, 56%) 10px minmax(140px, 1fr);
+      }
+
+      .editor-resize-handle {
+        height: 10px;
+        border-top: 1px solid #cad8ea;
+        border-bottom: 1px solid #cad8ea;
+        background: linear-gradient(180deg, #f1f6ff, #e5eefc);
+        cursor: row-resize;
+        position: relative;
+      }
+
+      .editor-resize-handle::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 56px;
+        height: 2px;
+        border-radius: 2px;
+        background: #8da4c1;
       }
 
       .canvas-toolbar {
@@ -511,8 +570,13 @@
 
         .app {
           flex-direction: column;
+          display: flex;
           height: auto;
           min-height: 100vh;
+        }
+
+        .pane-resize-handle {
+          display: none;
         }
 
         .page-controls {
@@ -608,9 +672,14 @@
           <div id="connectionHint" class="connection-hint">
             接続できない場合: `python -m uvicorn app.main:app --reload` を実行し、`http://127.0.0.1:8000` で開いてください。
           </div>
-          <div id="codeEditor" class="editor"></div>
-          <div id="console" class="console"></div>
+          <div id="leftSplitArea" class="left-split-area">
+            <div id="codeEditor" class="editor"></div>
+            <div id="editorResizeHandle" class="editor-resize-handle" role="separator" aria-orientation="horizontal"></div>
+            <div id="console" class="console"></div>
+          </div>
         </section>
+
+        <div id="paneResizeHandle" class="pane-resize-handle" role="separator" aria-orientation="vertical"></div>
 
         <section class="pane right-pane">
           <div class="pane-header">
@@ -679,6 +748,11 @@ print("done")
       const runBtn = document.getElementById("runBtn");
       const stopBtn = document.getElementById("stopBtn");
       const clearConsoleBtn = document.getElementById("clearConsoleBtn");
+      const appLayoutEl = document.querySelector(".app");
+      const leftPaneEl = document.querySelector(".left-pane");
+      const paneResizeHandleEl = document.getElementById("paneResizeHandle");
+      const leftSplitAreaEl = document.getElementById("leftSplitArea");
+      const editorResizeHandleEl = document.getElementById("editorResizeHandle");
       const editorMount = document.getElementById("codeEditor");
       const consoleEl = document.getElementById("console");
       const fileMenuWrapEl = document.getElementById("fileMenuWrap");
@@ -715,6 +789,8 @@ print("done")
       let workspacePages = [];
       let activePageIndex = -1;
       let pageSequence = 0;
+      let leftPaneWidthPx = null;
+      let editorHeightPx = null;
 
       function setStatus(text, mode = "normal") {
         runStatusEl.textContent = text;
@@ -832,6 +908,155 @@ print("done")
       function deepCloneJson(value) {
         if (value === null || value === undefined) return null;
         return JSON.parse(JSON.stringify(value));
+      }
+
+      const APP_SPLITTER_WIDTH = 12;
+      const APP_MIN_LEFT_WIDTH = 360;
+      const APP_MIN_RIGHT_WIDTH = 320;
+      const LEFT_SPLITTER_HEIGHT = 10;
+      const LEFT_MIN_EDITOR_HEIGHT = 160;
+      const LEFT_MIN_CONSOLE_HEIGHT = 140;
+      const MOBILE_BREAKPOINT = 980;
+
+      function clampNumber(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function isMobileLayout() {
+        return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
+      }
+
+      function layoutMonacoEditor() {
+        if (monacoEditor) {
+          monacoEditor.layout();
+        }
+      }
+
+      function applyPaneSplit(widthPx) {
+        if (!appLayoutEl || isMobileLayout()) return;
+
+        const totalWidth = Math.max(0, appLayoutEl.clientWidth);
+        const minLeft = APP_MIN_LEFT_WIDTH;
+        const maxLeft = totalWidth - APP_SPLITTER_WIDTH - APP_MIN_RIGHT_WIDTH;
+
+        if (maxLeft <= minLeft) {
+          appLayoutEl.style.gridTemplateColumns = `minmax(${APP_MIN_LEFT_WIDTH}px, 1fr) ${APP_SPLITTER_WIDTH}px minmax(${APP_MIN_RIGHT_WIDTH}px, 1fr)`;
+          leftPaneWidthPx = minLeft;
+          layoutMonacoEditor();
+          return;
+        }
+
+        const nextLeft = clampNumber(widthPx, minLeft, maxLeft);
+        leftPaneWidthPx = nextLeft;
+        appLayoutEl.style.gridTemplateColumns = `${nextLeft}px ${APP_SPLITTER_WIDTH}px minmax(${APP_MIN_RIGHT_WIDTH}px, 1fr)`;
+        layoutMonacoEditor();
+      }
+
+      function syncPaneSplitLayout() {
+        if (!appLayoutEl) return;
+        if (isMobileLayout()) {
+          appLayoutEl.style.gridTemplateColumns = "";
+          return;
+        }
+        const fallback = Math.round(appLayoutEl.clientWidth * 0.52);
+        applyPaneSplit(leftPaneWidthPx || fallback);
+      }
+
+      function applyEditorSplit(heightPx) {
+        if (!leftSplitAreaEl) return;
+
+        const totalHeight = Math.max(0, leftSplitAreaEl.clientHeight);
+        const minEditor = LEFT_MIN_EDITOR_HEIGHT;
+        const maxEditor = totalHeight - LEFT_SPLITTER_HEIGHT - LEFT_MIN_CONSOLE_HEIGHT;
+
+        if (maxEditor <= minEditor) {
+          leftSplitAreaEl.style.gridTemplateRows = `minmax(${LEFT_MIN_EDITOR_HEIGHT}px, 1fr) ${LEFT_SPLITTER_HEIGHT}px minmax(${LEFT_MIN_CONSOLE_HEIGHT}px, 1fr)`;
+          editorHeightPx = minEditor;
+          layoutMonacoEditor();
+          return;
+        }
+
+        const nextEditorHeight = clampNumber(heightPx, minEditor, maxEditor);
+        editorHeightPx = nextEditorHeight;
+        leftSplitAreaEl.style.gridTemplateRows = `${nextEditorHeight}px ${LEFT_SPLITTER_HEIGHT}px minmax(${LEFT_MIN_CONSOLE_HEIGHT}px, 1fr)`;
+        layoutMonacoEditor();
+      }
+
+      function syncEditorSplitLayout() {
+        if (!leftSplitAreaEl) return;
+        const totalHeight = leftSplitAreaEl.clientHeight;
+        if (totalHeight <= 0) return;
+        const fallback = Math.round(totalHeight * 0.56);
+        applyEditorSplit(editorHeightPx || fallback);
+      }
+
+      function startPaneResize(event) {
+        if (!paneResizeHandleEl || !leftPaneEl || isMobileLayout()) return;
+        event.preventDefault();
+
+        const startX = event.clientX;
+        const startWidth = leftPaneWidthPx || leftPaneEl.getBoundingClientRect().width;
+        document.body.classList.add("resizing-col");
+        withOptionalPointerCapture(paneResizeHandleEl, event.pointerId, "set");
+
+        const onMove = (moveEvent) => {
+          const deltaX = moveEvent.clientX - startX;
+          applyPaneSplit(startWidth + deltaX);
+          resizeBoardToWrapper();
+        };
+
+        const cleanup = () => {
+          document.body.classList.remove("resizing-col");
+          withOptionalPointerCapture(paneResizeHandleEl, event.pointerId, "release");
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", cleanup);
+          window.removeEventListener("pointercancel", cleanup);
+          resizeBoardToWrapper();
+        };
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", cleanup);
+        window.addEventListener("pointercancel", cleanup);
+      }
+
+      function startEditorResize(event) {
+        if (!editorResizeHandleEl || !editorMount) return;
+        event.preventDefault();
+
+        const startY = event.clientY;
+        const startHeight = editorHeightPx || editorMount.getBoundingClientRect().height;
+        document.body.classList.add("resizing-row");
+        withOptionalPointerCapture(editorResizeHandleEl, event.pointerId, "set");
+
+        const onMove = (moveEvent) => {
+          const deltaY = moveEvent.clientY - startY;
+          applyEditorSplit(startHeight + deltaY);
+        };
+
+        const cleanup = () => {
+          document.body.classList.remove("resizing-row");
+          withOptionalPointerCapture(editorResizeHandleEl, event.pointerId, "release");
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", cleanup);
+          window.removeEventListener("pointercancel", cleanup);
+        };
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", cleanup);
+        window.addEventListener("pointercancel", cleanup);
+      }
+
+      function withOptionalPointerCapture(target, pointerId, operation) {
+        if (!target || typeof pointerId !== "number") return;
+        try {
+          if (operation === "set") {
+            target.setPointerCapture(pointerId);
+          } else {
+            target.releasePointerCapture(pointerId);
+          }
+        } catch (_error) {
+          // Pointer capture may fail in some browser states.
+        }
       }
 
       function getLowerName(file) {
@@ -1576,6 +1801,9 @@ print("done")
         consoleEl.textContent = "";
       });
 
+      paneResizeHandleEl.addEventListener("pointerdown", startPaneResize);
+      editorResizeHandleEl.addEventListener("pointerdown", startEditorResize);
+
       fileTabEl.addEventListener("click", (event) => {
         event.stopPropagation();
         const open = filePanelEl.hidden;
@@ -1678,10 +1906,14 @@ print("done")
 
       initializeWorkspacePages();
       applyCommentDisplayMode("hover");
+      syncPaneSplitLayout();
+      syncEditorSplitLayout();
 
       initEditor().finally(() => {
         connectSocket();
         updateButtons();
+        syncPaneSplitLayout();
+        syncEditorSplitLayout();
       });
 
       // ---- Canvas area ----
@@ -2242,6 +2474,8 @@ print("done")
       });
 
       window.addEventListener("resize", () => {
+        syncPaneSplitLayout();
+        syncEditorSplitLayout();
         resizeBoardToWrapper();
       });
 

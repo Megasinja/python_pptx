@@ -7,6 +7,8 @@ WebSocket で実行ログを逐次ストリーミングし、停止操作にも�
 - 左ペイン
   - Python コード入力（Monaco Editor / VS Code 風）
   - 実行 / 停止 / ログクリア
+  - 左右ペイン比率をドラッグで変更
+  - コードエリア / 実行結果エリアの上下比率をドラッグで変更
   - stdout / stderr のリアルタイム表示
   - `display_data` 形式（Jupyter互換）での `matplotlib` プロット画像表示
   - ページ切替: Python + Canvas をページ単位で複数管理
