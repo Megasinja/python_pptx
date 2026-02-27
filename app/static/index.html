@@ -227,6 +227,36 @@
         border-bottom: 1px solid var(--line);
       }
 
+      .page-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--line);
+        background: #f8fbff;
+      }
+
+      .page-label {
+        font-size: 12px;
+        font-weight: 800;
+        color: #27415f;
+      }
+
+      .page-select {
+        min-width: 170px;
+        max-width: 280px;
+        flex: 1;
+        height: 32px;
+        border-radius: 7px;
+        border: 1px solid #c3d3ea;
+        background: #ffffff;
+        color: #18212f;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 0 8px;
+      }
+
       .connection-hint {
         padding: 8px 14px;
         border-bottom: 1px solid var(--line);
@@ -485,6 +515,10 @@
           min-height: 100vh;
         }
 
+        .page-controls {
+          flex-wrap: wrap;
+        }
+
         .left-pane,
         .right-pane {
           min-width: 0;
@@ -505,9 +539,11 @@
               <div class="menu-panel-actions">
                 <button id="openFileAction" type="button" class="menu-action">ファイルを開く...</button>
                 <button id="openFolderAction" type="button" class="menu-action">フォルダを開く...</button>
+                <button id="openSetAction" type="button" class="menu-action">セットを開く...</button>
+                <button id="saveSetAction" type="button" class="menu-action">セットを保存...</button>
               </div>
               <div class="menu-note">
-                `.py` は左エディタ、`.json` は右Canvasに読み込みます。
+                複数 `.py` / `.json` はページセットとして読み込みできます。
               </div>
               <input
                 id="openFileInput"
@@ -525,6 +561,7 @@
                 multiple
                 hidden
               />
+              <input id="openSetInput" type="file" accept=".json,application/json" hidden />
             </div>
           </div>
           <button type="button" class="menu-item">Edit</button>
@@ -561,6 +598,12 @@
             <button id="runBtn" class="button primary">実行</button>
             <button id="stopBtn" class="button danger" disabled>停止</button>
             <button id="clearConsoleBtn" class="button">ログをクリア</button>
+          </div>
+          <div class="page-controls">
+            <span class="page-label">ページ</span>
+            <select id="pageSelect" class="page-select" aria-label="ページ切替"></select>
+            <button id="addPageBtn" class="button" type="button">追加</button>
+            <button id="removePageBtn" class="button" type="button">削除</button>
           </div>
           <div id="connectionHint" class="connection-hint">
             接続できない場合: `python -m uvicorn app.main:app --reload` を実行し、`http://127.0.0.1:8000` で開いてください。
@@ -643,12 +686,20 @@ print("done")
       const filePanelEl = document.getElementById("filePanel");
       const openFileActionEl = document.getElementById("openFileAction");
       const openFolderActionEl = document.getElementById("openFolderAction");
+      const openSetActionEl = document.getElementById("openSetAction");
+      const saveSetActionEl = document.getElementById("saveSetAction");
       const openFileInputEl = document.getElementById("openFileInput");
       const openFolderInputEl = document.getElementById("openFolderInput");
+      const openSetInputEl = document.getElementById("openSetInput");
       const settingsMenuWrapEl = document.getElementById("settingsMenuWrap");
       const settingsTabEl = document.getElementById("settingsTab");
       const settingsPanelEl = document.getElementById("settingsPanel");
       const showAllCommentsToggleEl = document.getElementById("showAllCommentsToggle");
+      const pageSelectEl = document.getElementById("pageSelect");
+      const addPageBtn = document.getElementById("addPageBtn");
+      const removePageBtn = document.getElementById("removePageBtn");
+
+      const WORKSPACE_SET_SCHEMA_VERSION = 1;
 
       let socket = null;
       let running = false;
@@ -661,6 +712,9 @@ print("done")
       let commentHoverDecorationIds = [];
       let currentCommentHoverKey = "";
       let commentDisplayMode = "hover";
+      let workspacePages = [];
+      let activePageIndex = -1;
+      let pageSequence = 0;
 
       function setStatus(text, mode = "normal") {
         runStatusEl.textContent = text;
@@ -775,8 +829,43 @@ print("done")
         }
       }
 
+      function deepCloneJson(value) {
+        if (value === null || value === undefined) return null;
+        return JSON.parse(JSON.stringify(value));
+      }
+
       function getLowerName(file) {
         return String(file && file.name ? file.name : "").toLowerCase();
+      }
+
+      function getFilePath(file) {
+        return String(file && (file.webkitRelativePath || file.name) ? file.webkitRelativePath || file.name : "");
+      }
+
+      function stripFileExtension(name) {
+        return String(name || "").replace(/\.[^./\\]+$/, "");
+      }
+
+      function sanitizePageName(name, fallback = "") {
+        const normalized = String(name || "").trim() || String(fallback || "").trim();
+        if (!normalized) {
+          return `Page ${Math.max(1, workspacePages.length + 1)}`;
+        }
+        return normalized.slice(0, 80);
+      }
+
+      function extractCanvasSerializedFromJsonValue(value) {
+        if (!value || typeof value !== "object") return null;
+        if (Array.isArray(value.pages)) return null;
+
+        const candidate =
+          value.board && typeof value.board === "object" && !Array.isArray(value.board)
+            ? value.board
+            : value;
+        if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.objects)) {
+          return null;
+        }
+        return deepCloneJson(candidate);
       }
 
       function isPythonFile(file) {
@@ -785,6 +874,153 @@ print("done")
 
       function isJsonFile(file) {
         return getLowerName(file).endsWith(".json");
+      }
+
+      function buildPageId() {
+        pageSequence += 1;
+        return `page-${Date.now()}-${pageSequence}`;
+      }
+
+      function createWorkspacePage({ name, code = "", board = null } = {}) {
+        return {
+          id: buildPageId(),
+          name: sanitizePageName(name),
+          code: String(code ?? ""),
+          board: extractCanvasSerializedFromJsonValue(board),
+        };
+      }
+
+      function getActivePage() {
+        if (activePageIndex < 0 || activePageIndex >= workspacePages.length) return null;
+        return workspacePages[activePageIndex];
+      }
+
+      function refreshPageSelector() {
+        pageSelectEl.innerHTML = "";
+        workspacePages.forEach((page, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = `${index + 1}. ${page.name}`;
+          pageSelectEl.appendChild(option);
+        });
+
+        if (workspacePages.length === 0) {
+          activePageIndex = -1;
+          removePageBtn.disabled = true;
+          return;
+        }
+
+        if (activePageIndex < 0 || activePageIndex >= workspacePages.length) {
+          activePageIndex = 0;
+        }
+        pageSelectEl.value = String(activePageIndex);
+        removePageBtn.disabled = workspacePages.length <= 1;
+      }
+
+      function getBoardSnapshot() {
+        if (!board) return null;
+        const serialized = board.toDatalessJSON(["selectable", "evented", "editable"]);
+        if (!serialized || !Array.isArray(serialized.objects)) return null;
+        return deepCloneJson(serialized);
+      }
+
+      function captureActivePageState() {
+        const page = getActivePage();
+        if (!page) return;
+        page.code = getCodeValue();
+        const boardSnapshot = getBoardSnapshot();
+        if (boardSnapshot) {
+          page.board = boardSnapshot;
+        }
+      }
+
+      function applyActivePageState({ announce = true } = {}) {
+        const page = getActivePage();
+        if (!page) return;
+
+        setCodeValue(page.code);
+        if (board) {
+          loadBoardFromSerialized(page.board, { announce: false });
+        }
+
+        if (announce) {
+          appendEvent(`ページ切替: ${page.name}`);
+        }
+      }
+
+      function switchToPage(index, { captureCurrent = true, announce = true } = {}) {
+        if (!Number.isInteger(index) || index < 0 || index >= workspacePages.length) return;
+        if (captureCurrent && index === activePageIndex) return;
+        if (captureCurrent) {
+          captureActivePageState();
+        }
+
+        activePageIndex = index;
+        refreshPageSelector();
+        applyActivePageState({ announce });
+      }
+
+      function replaceWorkspacePages(pages, sourceLabel = "セット") {
+        const normalizedPages = Array.isArray(pages)
+          ? pages.filter((page) => page && (page.code || page.board))
+          : [];
+        if (!normalizedPages.length) {
+          appendConsole("[error] 読み込み可能なページがありませんでした。\n", "stderr");
+          return;
+        }
+
+        workspacePages = normalizedPages.map((page, index) =>
+          createWorkspacePage({
+            name: sanitizePageName(page.name, `Page ${index + 1}`),
+            code: page.code,
+            board: page.board,
+          })
+        );
+        activePageIndex = 0;
+        refreshPageSelector();
+        applyActivePageState({ announce: false });
+        appendEvent(`${sourceLabel} を読み込みました（${workspacePages.length}ページ）。`);
+      }
+
+      function addWorkspacePage() {
+        captureActivePageState();
+        const nextPage = createWorkspacePage({
+          name: `Page ${workspacePages.length + 1}`,
+          code: DEFAULT_CODE,
+          board: null,
+        });
+        workspacePages.push(nextPage);
+        switchToPage(workspacePages.length - 1, { captureCurrent: false, announce: false });
+        appendEvent(`ページを追加しました: ${nextPage.name}`);
+      }
+
+      function removeActiveWorkspacePage() {
+        if (workspacePages.length <= 1) {
+          appendEvent("最低1ページは必要です。");
+          return;
+        }
+        const currentPage = getActivePage();
+        const removedName = currentPage ? currentPage.name : "";
+        workspacePages.splice(activePageIndex, 1);
+        if (activePageIndex >= workspacePages.length) {
+          activePageIndex = workspacePages.length - 1;
+        }
+        refreshPageSelector();
+        applyActivePageState({ announce: false });
+        appendEvent(`ページを削除しました: ${removedName}`);
+      }
+
+      function initializeWorkspacePages() {
+        if (workspacePages.length > 0) return;
+        workspacePages = [
+          createWorkspacePage({
+            name: "Page 1",
+            code: DEFAULT_CODE,
+            board: null,
+          }),
+        ];
+        activePageIndex = 0;
+        refreshPageSelector();
       }
 
       function readTextFromFile(file) {
@@ -802,16 +1038,160 @@ print("done")
           appendConsole("[error] エディタ初期化前のため .py を読み込めませんでした。\n", "stderr");
           return;
         }
+        const currentPage = getActivePage();
+        if (currentPage) {
+          currentPage.code = code;
+          currentPage.name = sanitizePageName(stripFileExtension(file.name), currentPage.name);
+        }
+        refreshPageSelector();
         appendEvent(`Pythonファイルを読み込みました: ${file.name}`);
       }
 
       async function importJsonFile(file) {
-        if (!board) {
-          appendConsole("[error] Canvas が初期化されていないため .json を読み込めません。\n", "stderr");
+        const jsonText = await readTextFromFile(file);
+
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonText);
+        } catch (_error) {
+          appendConsole("[error] JSON 解析に失敗しました。\n", "stderr");
           return;
         }
-        const jsonText = await readTextFromFile(file);
-        importBoardFromJsonText(jsonText);
+
+        if (parsed && Array.isArray(parsed.pages)) {
+          importWorkspaceSetFromObject(parsed, file.name);
+          return;
+        }
+
+        const serialized = extractCanvasSerializedFromJsonValue(parsed);
+        if (!serialized) {
+          appendConsole("[error] Canvas JSON の形式が不正です。\n", "stderr");
+          return;
+        }
+
+        const currentPage = getActivePage();
+        if (currentPage) {
+          currentPage.board = serialized;
+          currentPage.name = sanitizePageName(stripFileExtension(file.name), currentPage.name);
+          refreshPageSelector();
+        }
+
+        loadBoardFromSerialized(serialized, { announce: false });
+        appendEvent(`Canvas JSON を読み込みました: ${file.name}`);
+      }
+
+      function exportWorkspaceSet() {
+        captureActivePageState();
+        const payload = {
+          schemaVersion: WORKSPACE_SET_SCHEMA_VERSION,
+          kind: "python-canvas-pageset",
+          exportedAt: new Date().toISOString(),
+          pages: workspacePages.map((page, index) => ({
+            name: sanitizePageName(page.name, `Page ${index + 1}`),
+            code: String(page.code || ""),
+            board: page.board ? deepCloneJson(page.board) : null,
+          })),
+        };
+
+        const jsonText = JSON.stringify(payload, null, 2);
+        const blob = new Blob([jsonText], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        anchor.href = url;
+        anchor.download = `workspace-set-${timestamp}.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        appendEvent(`ページセットを保存しました（${workspacePages.length}ページ）。`);
+      }
+
+      function importWorkspaceSetFromObject(value, sourceName = "セットJSON") {
+        if (!value || typeof value !== "object" || !Array.isArray(value.pages)) {
+          appendConsole("[error] ページセットJSONの形式が不正です。\n", "stderr");
+          return;
+        }
+
+        const importedPages = value.pages
+          .map((page, index) => {
+            if (!page || typeof page !== "object") return null;
+            const name = sanitizePageName(page.name, `Page ${index + 1}`);
+            const code = typeof page.code === "string" ? page.code : "";
+            const board = extractCanvasSerializedFromJsonValue(page.board);
+            return createWorkspacePage({ name, code, board });
+          })
+          .filter(Boolean);
+
+        if (!importedPages.length) {
+          appendConsole("[error] ページセット内に有効なページがありません。\n", "stderr");
+          return;
+        }
+        replaceWorkspacePages(importedPages, `ページセット(${sourceName})`);
+      }
+
+      async function importWorkspaceSetFile(file) {
+        const text = await readTextFromFile(file);
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (_error) {
+          appendConsole("[error] ページセットJSONの解析に失敗しました。\n", "stderr");
+          return;
+        }
+        importWorkspaceSetFromObject(parsed, file.name);
+      }
+
+      async function buildWorkspacePagesFromFiles(fileList) {
+        const entries = Array.from(fileList || [])
+          .map((file) => ({ file, path: getFilePath(file) }))
+          .filter((entry) => isPythonFile(entry.file) || isJsonFile(entry.file))
+          .sort((a, b) => String(a.path).localeCompare(String(b.path)));
+
+        const draftsByKey = new Map();
+        for (const entry of entries) {
+          const pairName = stripFileExtension(entry.path);
+          const pairKey = pairName.toLowerCase();
+          if (!draftsByKey.has(pairKey)) {
+            draftsByKey.set(pairKey, {
+              name: sanitizePageName(pairName, "Page"),
+              code: "",
+              board: null,
+              hasContent: false,
+            });
+          }
+          const draft = draftsByKey.get(pairKey);
+
+          if (isPythonFile(entry.file)) {
+            draft.code = await readTextFromFile(entry.file);
+            draft.hasContent = true;
+            continue;
+          }
+
+          if (isJsonFile(entry.file)) {
+            const jsonText = await readTextFromFile(entry.file);
+            try {
+              const parsed = JSON.parse(jsonText);
+              const board = extractCanvasSerializedFromJsonValue(parsed);
+              if (board) {
+                draft.board = board;
+                draft.hasContent = true;
+              } else {
+                appendEvent(`Canvas形式でないJSONをスキップしました: ${entry.path}`);
+              }
+            } catch (_error) {
+              appendConsole(`[error] JSON解析に失敗: ${entry.path}\n`, "stderr");
+            }
+          }
+        }
+
+        return Array.from(draftsByKey.values())
+          .filter((draft) => draft.hasContent)
+          .map((draft) =>
+            createWorkspacePage({
+              name: draft.name,
+              code: draft.code,
+              board: draft.board,
+            })
+          );
       }
 
       async function openFromFileSelection(fileList) {
@@ -825,12 +1205,21 @@ print("done")
           return;
         }
 
-        if (pyFiles[0]) await importPythonFile(pyFiles[0]);
-        if (jsonFiles[0]) await importJsonFile(jsonFiles[0]);
-
-        if (pyFiles.length > 1 || jsonFiles.length > 1) {
-          appendEvent("複数ファイルが選択されたため、各拡張子の先頭ファイルのみ読み込みました。");
+        if (files.length === 1 && pyFiles.length === 1) {
+          await importPythonFile(pyFiles[0]);
+          return;
         }
+        if (files.length === 1 && jsonFiles.length === 1) {
+          await importJsonFile(jsonFiles[0]);
+          return;
+        }
+
+        const pages = await buildWorkspacePagesFromFiles(files);
+        if (!pages.length) {
+          appendConsole("[error] ページとして読み込めるファイルがありませんでした。\n", "stderr");
+          return;
+        }
+        replaceWorkspacePages(pages, "選択ファイルセット");
       }
 
       async function openFromFolderSelection(fileList) {
@@ -845,26 +1234,17 @@ print("done")
         const pyFiles = sorted.filter(isPythonFile);
         const jsonFiles = sorted.filter(isJsonFile);
 
-        if (pyFiles[0]) {
-          await importPythonFile(pyFiles[0]);
-        } else {
-          appendEvent("フォルダ内に .py ファイルは見つかりませんでした。");
-        }
-
-        if (jsonFiles[0]) {
-          await importJsonFile(jsonFiles[0]);
-        } else {
-          appendEvent("フォルダ内に .json ファイルは見つかりませんでした。");
-        }
-
         if (!pyFiles.length && !jsonFiles.length) {
           appendConsole("[error] フォルダ内に .py / .json ファイルがありません。\n", "stderr");
           return;
         }
 
-        if (pyFiles.length > 1 || jsonFiles.length > 1) {
-          appendEvent("フォルダ内に複数ファイルがあるため、各拡張子の先頭ファイルのみ読み込みました。");
+        const pages = await buildWorkspacePagesFromFiles(sorted);
+        if (!pages.length) {
+          appendConsole("[error] フォルダから有効なページを作成できませんでした。\n", "stderr");
+          return;
         }
+        replaceWorkspacePages(pages, "フォルダセット");
       }
 
       function updateButtons() {
@@ -1002,7 +1382,8 @@ print("done")
         const textarea = document.createElement("textarea");
         textarea.className = "editor-fallback";
         textarea.spellcheck = false;
-        textarea.value = DEFAULT_CODE;
+        const activePage = getActivePage();
+        textarea.value = activePage ? activePage.code : DEFAULT_CODE;
         editorMount.appendChild(textarea);
         fallbackEditor = textarea;
         showAllCommentsToggleEl.disabled = true;
@@ -1151,8 +1532,9 @@ print("done")
         try {
           await loadMonaco();
           configureMonacoThemes();
+          const activePage = getActivePage();
           monacoEditor = window.monaco.editor.create(editorMount, {
-            value: DEFAULT_CODE,
+            value: activePage ? activePage.code : DEFAULT_CODE,
             language: "python",
             theme: "training-dark-muted",
             automaticLayout: true,
@@ -1175,6 +1557,7 @@ print("done")
           return;
         }
         if (running) return;
+        captureActivePageState();
         consoleEl.textContent = "";
         socket.send(
           JSON.stringify({
@@ -1210,6 +1593,16 @@ print("done")
         openFolderInputEl.click();
       });
 
+      openSetActionEl.addEventListener("click", () => {
+        setFilePanelOpen(false);
+        openSetInputEl.click();
+      });
+
+      saveSetActionEl.addEventListener("click", () => {
+        setFilePanelOpen(false);
+        exportWorkspaceSet();
+      });
+
       openFileInputEl.addEventListener("change", async (event) => {
         try {
           await openFromFileSelection(event.target.files);
@@ -1228,6 +1621,32 @@ print("done")
         } finally {
           event.target.value = "";
         }
+      });
+
+      openSetInputEl.addEventListener("change", async (event) => {
+        try {
+          const file = Array.from(event.target.files || [])[0];
+          if (!file) return;
+          await importWorkspaceSetFile(file);
+        } catch (_error) {
+          appendConsole("[error] ページセット読込に失敗しました。\n", "stderr");
+        } finally {
+          event.target.value = "";
+        }
+      });
+
+      pageSelectEl.addEventListener("change", (event) => {
+        const nextIndex = Number(event.target.value);
+        if (!Number.isInteger(nextIndex)) return;
+        switchToPage(nextIndex, { captureCurrent: true, announce: false });
+      });
+
+      addPageBtn.addEventListener("click", () => {
+        addWorkspacePage();
+      });
+
+      removePageBtn.addEventListener("click", () => {
+        removeActiveWorkspacePage();
       });
 
       settingsTabEl.addEventListener("click", (event) => {
@@ -1257,6 +1676,7 @@ print("done")
         }
       });
 
+      initializeWorkspacePages();
       applyCommentDisplayMode("hover");
 
       initEditor().finally(() => {
@@ -1554,6 +1974,11 @@ print("done")
 
       function exportBoardAsJson() {
         if (!board) return;
+        const currentPage = getActivePage();
+        if (currentPage) {
+          const snapshot = getBoardSnapshot();
+          if (snapshot) currentPage.board = snapshot;
+        }
 
         const payload = {
           schemaVersion: 1,
@@ -1572,35 +1997,47 @@ print("done")
         appendEvent("Canvas JSON を保存しました。");
       }
 
-      function importBoardFromJsonText(text) {
+      function loadBoardFromSerialized(serialized, { announce = false } = {}) {
         if (!board) return;
+        const safeSerialized =
+          serialized && typeof serialized === "object" && Array.isArray(serialized.objects)
+            ? deepCloneJson(serialized)
+            : { objects: [] };
 
+        board.loadFromJSON(
+          safeSerialized,
+          () => {
+            board.setBackgroundColor("#f8fbff", board.renderAll.bind(board));
+            board.getObjects().forEach((obj) => {
+              applyBoardObjectStyle(obj);
+              obj.setCoords();
+            });
+            setCanvasMode("select");
+            applyCanvasZoom(1);
+            board.requestRenderAll();
+            updateCanvasHint();
+            if (announce) {
+              appendEvent("Canvas JSON を読み込みました。");
+            }
+          },
+          (_serializedObject, object) => {
+            applyBoardObjectStyle(object);
+          }
+        );
+      }
+
+      function importBoardFromJsonText(text, { announce = true } = {}) {
         try {
           const parsed = JSON.parse(text);
-          const serialized = parsed && parsed.board ? parsed.board : parsed;
-          if (!serialized || !Array.isArray(serialized.objects)) {
+          const serialized = extractCanvasSerializedFromJsonValue(parsed);
+          if (!serialized) {
             throw new Error("Invalid Canvas JSON format");
           }
-
-          board.loadFromJSON(
-            serialized,
-            () => {
-              board.getObjects().forEach((obj) => {
-                applyBoardObjectStyle(obj);
-                obj.setCoords();
-              });
-              setCanvasMode("select");
-              applyCanvasZoom(1);
-              board.requestRenderAll();
-              updateCanvasHint();
-              appendEvent("Canvas JSON を読み込みました。");
-            },
-            (_serializedObject, object) => {
-              applyBoardObjectStyle(object);
-            }
-          );
+          loadBoardFromSerialized(serialized, { announce });
+          return serialized;
         } catch (_error) {
           appendConsole("[error] Canvas JSON の読み込みに失敗しました。\n", "stderr");
+          return null;
         }
       }
 
@@ -1626,6 +2063,7 @@ print("done")
         resizeBoardToWrapper();
         setCanvasMode("select");
         applyCanvasZoom(1);
+        applyActivePageState({ announce: false });
       }
 
       fileInput.addEventListener("change", (event) => {
@@ -1640,6 +2078,11 @@ print("done")
 
       clearCanvasBtn.addEventListener("click", () => {
         clearBoard();
+        const currentPage = getActivePage();
+        if (currentPage) {
+          const snapshot = getBoardSnapshot();
+          currentPage.board = snapshot;
+        }
       });
 
       selectToolBtn.addEventListener("click", () => {
@@ -1683,7 +2126,13 @@ print("done")
 
         const reader = new FileReader();
         reader.onload = () => {
-          importBoardFromJsonText(String(reader.result || ""));
+          const serialized = importBoardFromJsonText(String(reader.result || ""));
+          if (serialized) {
+            const currentPage = getActivePage();
+            if (currentPage) {
+              currentPage.board = serialized;
+            }
+          }
         };
         reader.onerror = () => {
           appendConsole("[error] JSON ファイルの読み込みに失敗しました。\n", "stderr");
