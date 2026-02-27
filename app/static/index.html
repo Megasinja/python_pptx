@@ -612,7 +612,7 @@
             <div id="laserDot" class="laser-dot" aria-hidden="true"></div>
             <div id="canvasHint" class="hint">
               右側に教材を配置できます<br />
-              画像追加 / テキスト追加 / ペン / レーザー / ズーム
+              2本指スクロールで移動 / ピンチでズーム
             </div>
           </div>
         </section>
@@ -1253,6 +1253,7 @@ print("done")
       let boardWidth = 0;
       let boardHeight = 0;
       let canvasZoom = 1;
+      let touchGesture = null;
 
       function clampCanvasZoom(value) {
         return Math.max(MIN_CANVAS_ZOOM, Math.min(MAX_CANVAS_ZOOM, value));
@@ -1264,6 +1265,69 @@ print("done")
 
       function updateCanvasHint() {
         canvasHint.classList.toggle("hidden", hasBoardContent());
+      }
+
+      function applyViewportTranslation(deltaX, deltaY, render = true) {
+        if (!board || !board.viewportTransform) return;
+        board.viewportTransform[4] += deltaX;
+        board.viewportTransform[5] += deltaY;
+        if (render) {
+          board.requestRenderAll();
+        }
+      }
+
+      function panViewportByWheel(deltaX, deltaY) {
+        applyViewportTranslation(-deltaX, -deltaY);
+      }
+
+      function screenToWorldPoint(screenX, screenY) {
+        if (!board || !window.fabric) return { x: 0, y: 0 };
+        const matrix = board.viewportTransform || [1, 0, 0, 1, 0, 0];
+        const inverseMatrix = window.fabric.util.invertTransform(matrix);
+        const point = window.fabric.util.transformPoint(
+          new window.fabric.Point(screenX, screenY),
+          inverseMatrix
+        );
+        return { x: point.x, y: point.y };
+      }
+
+      function getViewportCenterWorldPoint() {
+        if (!board) return { x: 0, y: 0 };
+        return screenToWorldPoint(board.getWidth() / 2, board.getHeight() / 2);
+      }
+
+      function resetViewportToCenter() {
+        if (!board || !board.viewportTransform) return;
+        canvasZoom = 1;
+        board.viewportTransform[0] = 1;
+        board.viewportTransform[1] = 0;
+        board.viewportTransform[2] = 0;
+        board.viewportTransform[3] = 1;
+        board.viewportTransform[4] = board.getWidth() / 2;
+        board.viewportTransform[5] = board.getHeight() / 2;
+        zoomValueEl.textContent = "100%";
+        board.requestRenderAll();
+      }
+
+      function getTouchPoint(touch) {
+        const rect = canvasWrap.getBoundingClientRect();
+        return {
+          x: touch.clientX - rect.left,
+          y: touch.clientY - rect.top,
+        };
+      }
+
+      function getMidpoint(first, second) {
+        return {
+          x: (first.x + second.x) / 2,
+          y: (first.y + second.y) / 2,
+        };
+      }
+
+      function getDistance(first, second) {
+        const dx = first.x - second.x;
+        const dy = first.y - second.y;
+        return Math.sqrt(dx * dx + dy * dy);
       }
 
       function hideLaserDot() {
@@ -1331,12 +1395,15 @@ print("done")
         board.requestRenderAll();
       }
 
-      function applyCanvasZoom(value) {
+      function applyCanvasZoom(value, focusPoint = null) {
         if (!board || !window.fabric) return;
 
         canvasZoom = clampCanvasZoom(value);
-        const center = new window.fabric.Point(board.getWidth() / 2, board.getHeight() / 2);
-        board.zoomToPoint(center, canvasZoom);
+        const nextFocus =
+          focusPoint instanceof window.fabric.Point
+            ? focusPoint
+            : new window.fabric.Point(board.getWidth() / 2, board.getHeight() / 2);
+        board.zoomToPoint(nextFocus, canvasZoom);
         zoomValueEl.textContent = `${Math.round(canvasZoom * 100)}%`;
         board.requestRenderAll();
       }
@@ -1349,24 +1416,24 @@ print("done")
         const nextHeight = Math.max(220, Math.floor(rect.height));
         if (nextWidth === boardWidth && nextHeight === boardHeight) return;
 
+        const previousWidth = boardWidth;
+        const previousHeight = boardHeight;
+
         board.setWidth(nextWidth);
         board.setHeight(nextHeight);
 
-        if (boardWidth > 0 && boardHeight > 0) {
-          const scaleX = nextWidth / boardWidth;
-          const scaleY = nextHeight / boardHeight;
-          board.getObjects().forEach((obj) => {
-            obj.left *= scaleX;
-            obj.top *= scaleY;
-            obj.scaleX *= scaleX;
-            obj.scaleY *= scaleY;
-            obj.setCoords();
-          });
-        }
-
         boardWidth = nextWidth;
         boardHeight = nextHeight;
-        applyCanvasZoom(canvasZoom);
+
+        if (previousWidth <= 0 || previousHeight <= 0) {
+          resetViewportToCenter();
+        } else {
+          const offsetX = (nextWidth - previousWidth) / 2;
+          const offsetY = (nextHeight - previousHeight) / 2;
+          applyViewportTranslation(offsetX, offsetY, false);
+          board.requestRenderAll();
+        }
+
         board.requestRenderAll();
         updateCanvasHint();
       }
@@ -1374,9 +1441,10 @@ print("done")
       function addTextBox() {
         if (!board || !window.fabric) return;
 
+        const center = getViewportCenterWorldPoint();
         const text = new window.fabric.Textbox("テキスト", {
-          left: board.getWidth() * 0.2,
-          top: board.getHeight() * 0.2,
+          left: center.x - 110,
+          top: center.y - 30,
           width: 220,
           fontSize: 30,
           fontWeight: "700",
@@ -1409,9 +1477,10 @@ print("done")
               const baseH = image.height || maxH;
               const scale = Math.min(maxW / baseW, maxH / baseH, 1);
 
+              const center = getViewportCenterWorldPoint();
               image.set({
-                left: (board.getWidth() - baseW * scale) / 2,
-                top: (board.getHeight() - baseH * scale) / 2,
+                left: center.x - (baseW * scale) / 2,
+                top: center.y - (baseH * scale) / 2,
               });
               applyBoardObjectStyle(image);
               image.scale(scale);
@@ -1431,8 +1500,7 @@ print("done")
         if (!board) return;
         board.clear();
         board.setBackgroundColor("#f8fbff", board.renderAll.bind(board));
-        canvasZoom = 1;
-        zoomValueEl.textContent = "100%";
+        resetViewportToCenter();
         setCanvasMode("select");
         updateCanvasHint();
       }
@@ -1592,11 +1660,75 @@ print("done")
         (event) => {
           if (!board) return;
           event.preventDefault();
-          const directionScale = event.deltaY < 0 ? 1.1 : 0.9;
-          applyCanvasZoom(canvasZoom * directionScale);
+          const isZoomGesture = event.ctrlKey || event.metaKey;
+          if (isZoomGesture) {
+            const directionScale = event.deltaY < 0 ? 1.08 : 0.92;
+            const focus = new window.fabric.Point(event.offsetX, event.offsetY);
+            applyCanvasZoom(canvasZoom * directionScale, focus);
+            return;
+          }
+
+          panViewportByWheel(event.deltaX, event.deltaY);
         },
         { passive: false }
       );
+
+      canvasWrap.addEventListener(
+        "touchstart",
+        (event) => {
+          if (!board || event.touches.length < 2) return;
+          event.preventDefault();
+          const first = getTouchPoint(event.touches[0]);
+          const second = getTouchPoint(event.touches[1]);
+          touchGesture = {
+            startDistance: Math.max(1, getDistance(first, second)),
+            startZoom: canvasZoom,
+            lastMidpoint: getMidpoint(first, second),
+          };
+        },
+        { passive: false }
+      );
+
+      canvasWrap.addEventListener(
+        "touchmove",
+        (event) => {
+          if (!board || event.touches.length < 2) return;
+          event.preventDefault();
+          const first = getTouchPoint(event.touches[0]);
+          const second = getTouchPoint(event.touches[1]);
+          const midpoint = getMidpoint(first, second);
+          const distance = Math.max(1, getDistance(first, second));
+
+          if (!touchGesture) {
+            touchGesture = {
+              startDistance: distance,
+              startZoom: canvasZoom,
+              lastMidpoint: midpoint,
+            };
+          }
+
+          const zoomFactor = distance / Math.max(1, touchGesture.startDistance);
+          const targetZoom = touchGesture.startZoom * zoomFactor;
+          applyCanvasZoom(targetZoom, new window.fabric.Point(midpoint.x, midpoint.y));
+
+          const deltaX = midpoint.x - touchGesture.lastMidpoint.x;
+          const deltaY = midpoint.y - touchGesture.lastMidpoint.y;
+          applyViewportTranslation(deltaX, deltaY);
+
+          touchGesture.lastMidpoint = midpoint;
+        },
+        { passive: false }
+      );
+
+      canvasWrap.addEventListener("touchend", (event) => {
+        if (event.touches.length < 2) {
+          touchGesture = null;
+        }
+      });
+
+      canvasWrap.addEventListener("touchcancel", () => {
+        touchGesture = null;
+      });
 
       canvasWrap.addEventListener("dragover", (event) => {
         event.preventDefault();
