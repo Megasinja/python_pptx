@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
 EXEC_TIMEOUT_SECONDS = 10
+PLOT_MARKER_PREFIX = "__PLOT_PNG__:"
 
 app = FastAPI(title="Python Training Prototype")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -52,13 +54,70 @@ async def stream_pipe(
         chunk = await pipe.readline()
         if not chunk:
             break
+        decoded = chunk.decode("utf-8", errors="replace")
+
+        if stream_type == "stdout" and decoded.startswith(PLOT_MARKER_PREFIX):
+            marker_payload = decoded[len(PLOT_MARKER_PREFIX) :].strip()
+            index_str, _, plot_data = marker_payload.partition(":")
+            if plot_data:
+                try:
+                    plot_index: int | None = int(index_str)
+                except ValueError:
+                    plot_index = None
+                await safe_send_json(
+                    websocket,
+                    {"type": "plot", "index": plot_index, "data": plot_data},
+                )
+                continue
+
         await safe_send_json(
             websocket,
             {
                 "type": stream_type,
-                "data": chunk.decode("utf-8", errors="replace"),
+                "data": decoded,
             },
         )
+
+
+def build_exec_script(user_code: str) -> str:
+    encoded_code = json.dumps(user_code)
+    return textwrap.dedent(
+        f"""
+        import base64
+        import io
+        import os
+        import sys
+        import traceback
+
+        os.environ.setdefault("MPLBACKEND", "Agg")
+        USER_CODE = {encoded_code}
+        user_globals = {{"__name__": "__main__"}}
+
+        try:
+            exec(compile(USER_CODE, "<user_code>", "exec"), user_globals, user_globals)
+        except Exception:
+            traceback.print_exc()
+            raise SystemExit(1)
+
+        try:
+            import matplotlib.pyplot as plt
+            from matplotlib import _pylab_helpers
+
+            managers = _pylab_helpers.Gcf.get_all_fig_managers()
+            for index, manager in enumerate(managers, start=1):
+                figure = manager.canvas.figure
+                buffer = io.BytesIO()
+                figure.savefig(buffer, format="png", bbox_inches="tight")
+                encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+                print("{PLOT_MARKER_PREFIX}" + str(index) + ":" + encoded)
+
+            if managers:
+                plt.close("all")
+        except Exception:
+            # Ignore plot export failures to keep normal execution behavior.
+            pass
+        """
+    )
 
 
 async def run_python_code(
@@ -75,11 +134,12 @@ async def run_python_code(
         return
 
     await safe_send_json(websocket, {"type": "status", "state": "started"})
+    exec_script = build_exec_script(code)
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         "-u",
         "-c",
-        code,
+        exec_script,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

@@ -315,6 +315,27 @@
         color: #8fc5ff;
       }
 
+      .console .plot-wrap {
+        display: block;
+        margin: 10px 0;
+      }
+
+      .console .plot-caption {
+        display: block;
+        color: #9fbbe8;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .console .plot-image {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #314867;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
       .canvas-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -660,6 +681,25 @@ print("done")
         appendConsole(`[event] ${text}\n`, "event");
       }
 
+      function appendPlot(base64Png, index) {
+        const wrap = document.createElement("div");
+        wrap.className = "plot-wrap";
+
+        const caption = document.createElement("span");
+        caption.className = "plot-caption";
+        caption.textContent = `plot${Number.isInteger(index) ? ` #${index}` : ""}`;
+
+        const img = document.createElement("img");
+        img.className = "plot-image";
+        img.alt = caption.textContent;
+        img.src = `data:image/png;base64,${base64Png}`;
+
+        wrap.appendChild(caption);
+        wrap.appendChild(img);
+        consoleEl.appendChild(wrap);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      }
+
       function getCodeValue() {
         if (monacoEditor) return monacoEditor.getValue();
         if (fallbackEditor) return fallbackEditor.value;
@@ -879,6 +919,11 @@ print("done")
 
           if (msg.type === "stderr") {
             appendConsole(msg.data, "stderr");
+            return;
+          }
+
+          if (msg.type === "plot") {
+            appendPlot(msg.data, msg.index);
             return;
           }
 
