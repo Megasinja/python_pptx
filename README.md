@@ -8,6 +8,8 @@ WebSocket で実行ログを逐次ストリーミングし、停止操作にも�
   - Python コード入力（Monaco Editor / VS Code 風）
   - 実行 / 停止 / ログクリア
   - stdout / stderr のリアルタイム表示
+  - File > ファイルを開く: `.py`（エディタ読込）/ `.json`（Canvas読込）
+  - File > フォルダを開く: フォルダ内の `.py` と `.json` を自動読込
 - 右ペイン
   - 画像ファイルを Canvas に配置（ドラッグ&ドロップ対応）
   - 画像/テキストの移動・リサイズ

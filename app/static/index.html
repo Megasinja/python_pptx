@@ -127,6 +127,38 @@
         height: 16px;
       }
 
+      .menu-panel-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .menu-action {
+        appearance: none;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: #16233a;
+        font: inherit;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+
+      .menu-action:hover {
+        background: #eef4ff;
+      }
+
+      .menu-note {
+        margin-top: 6px;
+        padding: 0 6px;
+        font-size: 11px;
+        line-height: 1.4;
+        color: #60728b;
+      }
+
       .app {
         display: flex;
         gap: 14px;
@@ -442,7 +474,35 @@
       <header class="menu-bar">
         <div class="menu-list">
           <span class="menu-title">Code</span>
-          <button type="button" class="menu-item">File</button>
+          <div id="fileMenuWrap" class="menu-settings">
+            <button id="fileTab" type="button" class="menu-item">File</button>
+            <div id="filePanel" class="settings-panel" hidden>
+              <div class="settings-title">FILE</div>
+              <div class="menu-panel-actions">
+                <button id="openFileAction" type="button" class="menu-action">ファイルを開く...</button>
+                <button id="openFolderAction" type="button" class="menu-action">フォルダを開く...</button>
+              </div>
+              <div class="menu-note">
+                `.py` は左エディタ、`.json` は右Canvasに読み込みます。
+              </div>
+              <input
+                id="openFileInput"
+                type="file"
+                accept=".py,.json,application/json,text/plain"
+                multiple
+                hidden
+              />
+              <input
+                id="openFolderInput"
+                type="file"
+                accept=".py,.json,application/json,text/plain"
+                webkitdirectory
+                directory
+                multiple
+                hidden
+              />
+            </div>
+          </div>
           <button type="button" class="menu-item">Edit</button>
           <button type="button" class="menu-item">Selection</button>
           <button type="button" class="menu-item">View</button>
@@ -554,6 +614,13 @@ print("done")
       const clearConsoleBtn = document.getElementById("clearConsoleBtn");
       const editorMount = document.getElementById("codeEditor");
       const consoleEl = document.getElementById("console");
+      const fileMenuWrapEl = document.getElementById("fileMenuWrap");
+      const fileTabEl = document.getElementById("fileTab");
+      const filePanelEl = document.getElementById("filePanel");
+      const openFileActionEl = document.getElementById("openFileAction");
+      const openFolderActionEl = document.getElementById("openFolderAction");
+      const openFileInputEl = document.getElementById("openFileInput");
+      const openFolderInputEl = document.getElementById("openFolderInput");
       const settingsMenuWrapEl = document.getElementById("settingsMenuWrap");
       const settingsTabEl = document.getElementById("settingsTab");
       const settingsPanelEl = document.getElementById("settingsPanel");
@@ -596,6 +663,24 @@ print("done")
         return "";
       }
 
+      function setCodeValue(code) {
+        const nextCode = String(code ?? "");
+        if (monacoEditor) {
+          monacoEditor.setValue(nextCode);
+          return true;
+        }
+        if (fallbackEditor) {
+          fallbackEditor.value = nextCode;
+          return true;
+        }
+        return false;
+      }
+
+      function setFilePanelOpen(open) {
+        filePanelEl.hidden = !open;
+        fileTabEl.classList.toggle("active", open);
+      }
+
       function setSettingsPanelOpen(open) {
         settingsPanelEl.hidden = !open;
         settingsTabEl.classList.toggle("active", open);
@@ -612,6 +697,98 @@ print("done")
         );
         if (normalized === "full") {
           applyCommentHoverDecoration(null);
+        }
+      }
+
+      function getLowerName(file) {
+        return String(file && file.name ? file.name : "").toLowerCase();
+      }
+
+      function isPythonFile(file) {
+        return getLowerName(file).endsWith(".py");
+      }
+
+      function isJsonFile(file) {
+        return getLowerName(file).endsWith(".json");
+      }
+
+      function readTextFromFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsText(file, "utf-8");
+        });
+      }
+
+      async function importPythonFile(file) {
+        const code = await readTextFromFile(file);
+        if (!setCodeValue(code)) {
+          appendConsole("[error] エディタ初期化前のため .py を読み込めませんでした。\n", "stderr");
+          return;
+        }
+        appendEvent(`Pythonファイルを読み込みました: ${file.name}`);
+      }
+
+      async function importJsonFile(file) {
+        if (!board) {
+          appendConsole("[error] Canvas が初期化されていないため .json を読み込めません。\n", "stderr");
+          return;
+        }
+        const jsonText = await readTextFromFile(file);
+        importBoardFromJsonText(jsonText);
+      }
+
+      async function openFromFileSelection(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+
+        const pyFiles = files.filter(isPythonFile);
+        const jsonFiles = files.filter(isJsonFile);
+        if (!pyFiles.length && !jsonFiles.length) {
+          appendConsole("[error] .py または .json ファイルを選択してください。\n", "stderr");
+          return;
+        }
+
+        if (pyFiles[0]) await importPythonFile(pyFiles[0]);
+        if (jsonFiles[0]) await importJsonFile(jsonFiles[0]);
+
+        if (pyFiles.length > 1 || jsonFiles.length > 1) {
+          appendEvent("複数ファイルが選択されたため、各拡張子の先頭ファイルのみ読み込みました。");
+        }
+      }
+
+      async function openFromFolderSelection(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+
+        const sorted = files
+          .slice()
+          .sort((a, b) =>
+            String(a.webkitRelativePath || a.name).localeCompare(String(b.webkitRelativePath || b.name))
+          );
+        const pyFiles = sorted.filter(isPythonFile);
+        const jsonFiles = sorted.filter(isJsonFile);
+
+        if (pyFiles[0]) {
+          await importPythonFile(pyFiles[0]);
+        } else {
+          appendEvent("フォルダ内に .py ファイルは見つかりませんでした。");
+        }
+
+        if (jsonFiles[0]) {
+          await importJsonFile(jsonFiles[0]);
+        } else {
+          appendEvent("フォルダ内に .json ファイルは見つかりませんでした。");
+        }
+
+        if (!pyFiles.length && !jsonFiles.length) {
+          appendConsole("[error] フォルダ内に .py / .json ファイルがありません。\n", "stderr");
+          return;
+        }
+
+        if (pyFiles.length > 1 || jsonFiles.length > 1) {
+          appendEvent("フォルダ内に複数ファイルがあるため、各拡張子の先頭ファイルのみ読み込みました。");
         }
       }
 
@@ -931,9 +1108,48 @@ print("done")
         consoleEl.textContent = "";
       });
 
+      fileTabEl.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = filePanelEl.hidden;
+        setSettingsPanelOpen(false);
+        setFilePanelOpen(open);
+      });
+
+      openFileActionEl.addEventListener("click", () => {
+        setFilePanelOpen(false);
+        openFileInputEl.click();
+      });
+
+      openFolderActionEl.addEventListener("click", () => {
+        setFilePanelOpen(false);
+        openFolderInputEl.click();
+      });
+
+      openFileInputEl.addEventListener("change", async (event) => {
+        try {
+          await openFromFileSelection(event.target.files);
+        } catch (_error) {
+          appendConsole("[error] ファイル読込に失敗しました。\n", "stderr");
+        } finally {
+          event.target.value = "";
+        }
+      });
+
+      openFolderInputEl.addEventListener("change", async (event) => {
+        try {
+          await openFromFolderSelection(event.target.files);
+        } catch (_error) {
+          appendConsole("[error] フォルダ読込に失敗しました。\n", "stderr");
+        } finally {
+          event.target.value = "";
+        }
+      });
+
       settingsTabEl.addEventListener("click", (event) => {
         event.stopPropagation();
-        setSettingsPanelOpen(settingsPanelEl.hidden);
+        const open = settingsPanelEl.hidden;
+        setFilePanelOpen(false);
+        setSettingsPanelOpen(open);
       });
 
       showAllCommentsToggleEl.addEventListener("change", () => {
@@ -941,6 +1157,9 @@ print("done")
       });
 
       document.addEventListener("click", (event) => {
+        if (!fileMenuWrapEl.contains(event.target)) {
+          setFilePanelOpen(false);
+        }
         if (!settingsMenuWrapEl.contains(event.target)) {
           setSettingsPanelOpen(false);
         }
@@ -948,6 +1167,7 @@ print("done")
 
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
+          setFilePanelOpen(false);
           setSettingsPanelOpen(false);
         }
       });
