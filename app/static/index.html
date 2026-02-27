@@ -503,6 +503,17 @@
               <button id="zoomInBtn" class="tool-button">+</button>
               <button id="resetZoomBtn" class="tool-button">100%</button>
             </div>
+            <div class="tool-group">
+              <button id="exportCanvasJsonBtn" class="tool-button">JSON保存</button>
+              <label class="tool-button file-label">
+                JSON読込
+                <input
+                  id="importCanvasJsonInput"
+                  type="file"
+                  accept=".json,application/json"
+                />
+              </label>
+            </div>
             <button id="clearCanvasBtn" class="button">Canvasをクリア</button>
           </div>
           <div id="canvasWrap" class="canvas-wrap">
@@ -953,6 +964,8 @@ print("done")
       const zoomInBtn = document.getElementById("zoomInBtn");
       const resetZoomBtn = document.getElementById("resetZoomBtn");
       const zoomValueEl = document.getElementById("zoomValue");
+      const exportCanvasJsonBtn = document.getElementById("exportCanvasJsonBtn");
+      const importCanvasJsonInput = document.getElementById("importCanvasJsonInput");
       const canvasWrap = document.getElementById("canvasWrap");
       const canvasHint = document.getElementById("canvasHint");
       const canvasElement = document.getElementById("materialCanvas");
@@ -1100,6 +1113,7 @@ print("done")
           transparentCorners: false,
           editable: true,
         });
+        applyBoardObjectStyle(text);
         board.add(text);
         board.setActiveObject(text);
         setCanvasMode("select");
@@ -1123,11 +1137,8 @@ print("done")
               image.set({
                 left: (board.getWidth() - baseW * scale) / 2,
                 top: (board.getHeight() - baseH * scale) / 2,
-                cornerColor: "#1d4ed8",
-                borderColor: "#1d4ed8",
-                cornerStyle: "circle",
-                transparentCorners: false,
               });
+              applyBoardObjectStyle(image);
               image.scale(scale);
               board.add(image);
               board.setActiveObject(image);
@@ -1149,6 +1160,68 @@ print("done")
         zoomValueEl.textContent = "100%";
         setCanvasMode("select");
         updateCanvasHint();
+      }
+
+      function applyBoardObjectStyle(object) {
+        if (!object) return;
+        object.set({
+          cornerColor: "#1d4ed8",
+          borderColor: "#1d4ed8",
+          cornerStyle: "circle",
+          transparentCorners: false,
+        });
+      }
+
+      function exportBoardAsJson() {
+        if (!board) return;
+
+        const payload = {
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          board: board.toDatalessJSON(["selectable", "evented", "editable"]),
+        };
+        const jsonText = JSON.stringify(payload, null, 2);
+        const blob = new Blob([jsonText], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        anchor.href = url;
+        anchor.download = `canvas-${timestamp}.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        appendEvent("Canvas JSON を保存しました。");
+      }
+
+      function importBoardFromJsonText(text) {
+        if (!board) return;
+
+        try {
+          const parsed = JSON.parse(text);
+          const serialized = parsed && parsed.board ? parsed.board : parsed;
+          if (!serialized || !Array.isArray(serialized.objects)) {
+            throw new Error("Invalid Canvas JSON format");
+          }
+
+          board.loadFromJSON(
+            serialized,
+            () => {
+              board.getObjects().forEach((obj) => {
+                applyBoardObjectStyle(obj);
+                obj.setCoords();
+              });
+              setCanvasMode("select");
+              applyCanvasZoom(1);
+              board.requestRenderAll();
+              updateCanvasHint();
+              appendEvent("Canvas JSON を読み込みました。");
+            },
+            (_serializedObject, object) => {
+              applyBoardObjectStyle(object);
+            }
+          );
+        } catch (_error) {
+          appendConsole("[error] Canvas JSON の読み込みに失敗しました。\n", "stderr");
+        }
       }
 
       function initCanvasBoard() {
@@ -1217,6 +1290,26 @@ print("done")
 
       resetZoomBtn.addEventListener("click", () => {
         applyCanvasZoom(1);
+      });
+
+      exportCanvasJsonBtn.addEventListener("click", () => {
+        exportBoardAsJson();
+      });
+
+      importCanvasJsonInput.addEventListener("change", (event) => {
+        const files = Array.from(event.target.files || []);
+        const file = files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          importBoardFromJsonText(String(reader.result || ""));
+        };
+        reader.onerror = () => {
+          appendConsole("[error] JSON ファイルの読み込みに失敗しました。\n", "stderr");
+        };
+        reader.readAsText(file, "utf-8");
+        event.target.value = "";
       });
 
       canvasWrap.addEventListener(
