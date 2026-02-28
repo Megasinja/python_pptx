@@ -1888,6 +1888,59 @@ print("done")
         applyCommentDisplayMode(showAllCommentsToggleEl.checked ? "full" : "hover");
       });
 
+      function isEditableDomTarget(target) {
+        if (!(target instanceof HTMLElement)) return false;
+        if (target.isContentEditable) return true;
+        if (target.closest("[contenteditable=''], [contenteditable='true']")) return true;
+        if (target.closest("input, textarea, select")) return true;
+        return false;
+      }
+
+      function isCodeEditorTextFocus() {
+        if (monacoEditor && typeof monacoEditor.hasTextFocus === "function" && monacoEditor.hasTextFocus()) {
+          return true;
+        }
+        if (fallbackEditor && document.activeElement === fallbackEditor) {
+          return true;
+        }
+        return false;
+      }
+
+      function isCanvasTextEditing() {
+        if (!board || typeof board.getActiveObject !== "function") return false;
+        const activeObject = board.getActiveObject();
+        return Boolean(activeObject && activeObject.isEditing);
+      }
+
+      function deleteSelectedCanvasObjectsByBackspace(event) {
+        if (event.key !== "Backspace") return false;
+        if (!board) return false;
+        if (isEditableDomTarget(event.target)) return false;
+        if (isCodeEditorTextFocus()) return false;
+        if (isCanvasTextEditing()) return false;
+
+        const activeObjects =
+          typeof board.getActiveObjects === "function"
+            ? board.getActiveObjects().filter(Boolean)
+            : [];
+        if (activeObjects.length === 0) return false;
+
+        event.preventDefault();
+        event.stopPropagation();
+        activeObjects.forEach((obj) => board.remove(obj));
+        board.discardActiveObject();
+        board.requestRenderAll();
+        updateCanvasHint();
+
+        const currentPage = getActivePage();
+        if (currentPage) {
+          const snapshot = getBoardSnapshot();
+          currentPage.board = snapshot;
+        }
+        appendEvent(`Canvas要素を削除しました (${activeObjects.length}件)。`);
+        return true;
+      }
+
       document.addEventListener("click", (event) => {
         if (!fileMenuWrapEl.contains(event.target)) {
           setFilePanelOpen(false);
@@ -1898,6 +1951,9 @@ print("done")
       });
 
       document.addEventListener("keydown", (event) => {
+        if (deleteSelectedCanvasObjectsByBackspace(event)) {
+          return;
+        }
         if (event.key === "Escape") {
           setFilePanelOpen(false);
           setSettingsPanelOpen(false);
