@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "python-canvas-pageset",
+  "exportedAt": "2026-02-28T00:00:00.000Z",
+  "pages": [
+    {
+      "name": "01_print_and_vars",
+      "code": "# 1ページ目: printと変数\nname = \"Python研修\"\nlevel = 1\nprint(f\"{name} / level={level}\")\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "02_loop_basics",
+      "code": "# 2ページ目: ループ\nfor i in range(1, 6):\n    print(\"step\", i)\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "03_function_practice",
+      "code": "# 3ページ目: 関数\ndef area(w, h):\n    return w * h\n\nprint(\"area=\", area(4, 7))\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    }
+  ]
+}

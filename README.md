@@ -42,6 +42,13 @@ python -m uvicorn app.main:app --reload
 `app/static/index.html` をファイルとして直接開く（`file://...`）と WebSocket 接続できません。  
 必ず `python -m uvicorn` で起動したサーバー経由で開いてください。
 
+## サンプルセット
+`File > セットを開く...` から以下のダミーセットを読み込めます。
+
+- `samples/sets/python_intro_3pages.json`
+- `samples/sets/matplotlib_practice_2pages.json`
+- `samples/sets/training_template_4pages.json`
+
 ## 注意事項
 - これは研修向けの最小プロトタイプです。
 - 実行タイムアウトは 10 秒です（`app/main.py` の `EXEC_TIMEOUT_SECONDS`）。

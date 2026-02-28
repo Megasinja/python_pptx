@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "python-canvas-pageset",
+  "exportedAt": "2026-02-28T00:00:00.000Z",
+  "pages": [
+    {
+      "name": "task_01_input_output",
+      "code": "# 課題1: 入出力\ntext = \"hello\"\nprint(text.upper())\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "task_02_condition",
+      "code": "# 課題2: 条件分岐\nscore = 78\nif score >= 80:\n    print(\"A\")\nelif score >= 60:\n    print(\"B\")\nelse:\n    print(\"C\")\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "task_03_list",
+      "code": "# 課題3: リスト処理\nnums = [3, 1, 4, 1, 5]\nprint(\"sum=\", sum(nums))\nprint(\"sorted=\", sorted(nums))\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "task_04_function",
+      "code": "# 課題4: 関数\ndef greet(name):\n    return f\"Hello, {name}!\"\n\nprint(greet(\"trainee\"))\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "python-canvas-pageset",
+  "exportedAt": "2026-02-28T00:00:00.000Z",
+  "pages": [
+    {
+      "name": "plot_line",
+      "code": "import matplotlib.pyplot as plt\n\nx = [1, 2, 3, 4]\ny = [2, 3, 5, 8]\nplt.plot(x, y, marker=\"o\")\nplt.title(\"Line Plot Sample\")\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    },
+    {
+      "name": "plot_bar",
+      "code": "import matplotlib.pyplot as plt\n\nlabels = [\"A\", \"B\", \"C\"]\nvalues = [5, 2, 7]\nplt.bar(labels, values)\nplt.title(\"Bar Plot Sample\")\n",
+      "board": {
+        "version": "5.3.0",
+        "objects": []
+      }
+    }
+  ]
+}
