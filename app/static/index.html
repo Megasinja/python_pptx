@@ -791,8 +791,6 @@ print("done")
       let pageSequence = 0;
       let leftPaneWidthPx = null;
       let editorHeightPx = null;
-      let runtimeExecutionHistory = [];
-      let pendingRunCode = null;
 
       function setStatus(text, mode = "normal") {
         runStatusEl.textContent = text;
@@ -910,21 +908,6 @@ print("done")
       function deepCloneJson(value) {
         if (value === null || value === undefined) return null;
         return JSON.parse(JSON.stringify(value));
-      }
-
-      function buildRuntimeContextCode() {
-        if (!Array.isArray(runtimeExecutionHistory) || runtimeExecutionHistory.length === 0) {
-          return "";
-        }
-        return runtimeExecutionHistory.join("\n\n");
-      }
-
-      function resetRuntimeExecutionHistory(reason = "") {
-        runtimeExecutionHistory = [];
-        pendingRunCode = null;
-        if (reason) {
-          appendEvent(`実行コンテキストを初期化しました: ${reason}`);
-        }
       }
 
       const APP_SPLITTER_WIDTH = 12;
@@ -1221,7 +1204,6 @@ print("done")
         activePageIndex = 0;
         refreshPageSelector();
         applyActivePageState({ announce: false });
-        resetRuntimeExecutionHistory(`${sourceLabel} 読込`);
         appendEvent(`${sourceLabel} を読み込みました（${workspacePages.length}ページ）。`);
       }
 
@@ -1264,7 +1246,6 @@ print("done")
         ];
         activePageIndex = 0;
         refreshPageSelector();
-        resetRuntimeExecutionHistory();
       }
 
       function readTextFromFile(file) {
@@ -1551,7 +1532,6 @@ print("done")
 
         socket.addEventListener("close", () => {
           running = false;
-          pendingRunCode = null;
           updateButtons();
           if (!disconnectLogged) {
             appendEvent("WebSocket disconnected. バックエンドを起動してください。");
@@ -1593,7 +1573,6 @@ print("done")
             appendConsole(`[error] ${msg.message}\n`, "stderr");
             setStatus("エラー", "error");
             running = false;
-            pendingRunCode = null;
             updateButtons();
             return;
           }
@@ -1607,21 +1586,14 @@ print("done")
               setStatus("停止処理中...", "running");
             } else if (msg.state === "aborted") {
               running = false;
-              pendingRunCode = null;
               setStatus("停止しました");
               appendEvent("Execution aborted");
             } else if (msg.state === "timeout") {
               running = false;
-              pendingRunCode = null;
               setStatus("タイムアウト", "error");
               appendEvent(msg.message || "Execution timeout");
             } else if (msg.state === "finished") {
               running = false;
-              const returnCode = Number(msg.returnCode);
-              if (returnCode === 0 && typeof pendingRunCode === "string" && pendingRunCode.trim()) {
-                runtimeExecutionHistory.push(pendingRunCode);
-              }
-              pendingRunCode = null;
               const code = Number.isInteger(msg.returnCode) ? ` (code=${msg.returnCode})` : "";
               setStatus(`完了${code}`);
               appendEvent(`Execution finished${code}`);
@@ -1811,15 +1783,11 @@ print("done")
         }
         if (running) return;
         captureActivePageState();
-        const codeToRun = getCodeValue();
-        const contextCode = buildRuntimeContextCode();
-        pendingRunCode = codeToRun;
         consoleEl.textContent = "";
         socket.send(
           JSON.stringify({
             type: "run",
-            code: codeToRun,
-            contextCode,
+            code: getCodeValue(),
           })
         );
       });
