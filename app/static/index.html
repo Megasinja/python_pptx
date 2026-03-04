@@ -561,6 +561,283 @@
         opacity: 1;
       }
 
+      /* ── Jupyter Notebook styles ── */
+      .notebook-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--line);
+        background: #f8fbff;
+        flex-wrap: wrap;
+      }
+
+      .nb-tool-btn {
+        appearance: none;
+        border: 1px solid #c8d8ee;
+        border-radius: 6px;
+        background: #f5f8ff;
+        color: #163156;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      .nb-tool-btn:hover {
+        background: #e8f0ff;
+      }
+
+      .nb-tool-btn.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .nb-tool-btn.danger {
+        color: #c81e1e;
+        border-color: #f3cbcb;
+        background: #fdf2f2;
+      }
+
+      .nb-tool-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .notebook-container {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 8px 0;
+        background: #f4f7fb;
+      }
+
+      .nb-cell {
+        margin: 4px 10px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        transition: border-color 0.15s;
+        overflow: hidden;
+      }
+
+      .nb-cell:hover {
+        border-color: #c0d0e4;
+      }
+
+      .nb-cell.selected {
+        border-color: #1d4ed8;
+      }
+
+      .nb-cell.running {
+        border-color: #16a34a;
+      }
+
+      .nb-cell-input-area {
+        display: flex;
+      }
+
+      .nb-cell-prompt {
+        width: 70px;
+        min-width: 70px;
+        padding: 10px 6px 10px 10px;
+        text-align: right;
+        font-family: "UDEV Gothic 35NF", "Menlo", "Consolas", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #1d4ed8;
+        user-select: none;
+        line-height: 1.5;
+        background: #f7f9fc;
+      }
+
+      .nb-cell.running .nb-cell-prompt {
+        color: #16a34a;
+      }
+
+      .nb-cell-prompt.out-prompt {
+        color: #c81e1e;
+      }
+
+      .nb-cell-editor-wrap {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+      }
+
+      .nb-cell-code {
+        display: block;
+        width: 100%;
+        min-height: 56px;
+        border: 0;
+        margin: 0;
+        padding: 8px 12px;
+        resize: none;
+        font-family: "UDEV Gothic 35NF", "Menlo", "Consolas", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #d9e6ff;
+        background: #0d1726;
+        tab-size: 4;
+        outline: none;
+        overflow: hidden;
+      }
+
+      .nb-cell-code:focus {
+        box-shadow: inset 0 0 0 2px rgba(29, 78, 216, 0.45);
+      }
+
+      .nb-cell-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 6px;
+        justify-content: flex-end;
+        background: #f7f9fc;
+        border-top: 1px solid #eef2f8;
+      }
+
+      .nb-cell-action-btn {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: #566277;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-family: inherit;
+      }
+
+      .nb-cell-action-btn:hover {
+        background: #e8f0ff;
+        color: #1d4ed8;
+      }
+
+      .nb-cell-action-btn.run-btn {
+        color: #16a34a;
+      }
+
+      .nb-cell-action-btn.run-btn:hover {
+        background: #ecfdf5;
+      }
+
+      .nb-cell-output-area {
+        display: flex;
+        border-top: 1px solid #eef2f8;
+      }
+
+      .nb-cell-output-area:empty {
+        display: none;
+      }
+
+      .nb-cell-output {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 12px;
+        font-family: "UDEV Gothic 35NF", "Menlo", "Consolas", monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #fff;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .nb-cell-output .stdout {
+        color: #132033;
+      }
+
+      .nb-cell-output .stderr {
+        color: #c81e1e;
+      }
+
+      .nb-cell-output .event {
+        color: #1d4ed8;
+        font-style: italic;
+      }
+
+      .nb-cell-output .plot-wrap {
+        display: block;
+        margin: 6px 0;
+      }
+
+      .nb-cell-output .plot-caption {
+        display: block;
+        color: #566277;
+        font-size: 11px;
+        margin-bottom: 2px;
+      }
+
+      .nb-cell-output .plot-image {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #d8e1ee;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .nb-add-cell-bar {
+        display: flex;
+        justify-content: center;
+        padding: 8px 0;
+      }
+
+      .nb-add-cell-btn {
+        appearance: none;
+        border: 1px dashed #c8d8ee;
+        border-radius: 6px;
+        background: transparent;
+        color: #566277;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 5px 20px;
+        cursor: pointer;
+      }
+
+      .nb-add-cell-btn:hover {
+        background: #e8f0ff;
+        border-color: #1d4ed8;
+        color: #1d4ed8;
+      }
+
+      .nb-kernel-indicator {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 700;
+        color: #566277;
+      }
+
+      .nb-kernel-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+      }
+
+      .nb-kernel-dot.connected {
+        background: #16a34a;
+      }
+
+      .nb-kernel-dot.running {
+        background: #f59e0b;
+        animation: pulse-dot 1s infinite;
+      }
+
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+
       @media (max-width: 980px) {
         .menu-title {
           font-size: 16px;
@@ -654,16 +931,22 @@
       <main class="app">
         <section class="pane left-pane">
           <div class="pane-header">
-            <span>Python実行エリア</span>
+            <span>Python Notebook</span>
             <div class="status-group">
               <span id="pythonInfo" class="status"></span>
               <span id="runStatus" class="status">接続中...</span>
+              <div class="nb-kernel-indicator">
+                <span id="kernelDot" class="nb-kernel-dot"></span>
+                <span id="kernelLabel">Kernel</span>
+              </div>
             </div>
           </div>
-          <div class="controls">
-            <button id="runBtn" class="button primary">実行</button>
-            <button id="stopBtn" class="button danger" disabled>停止</button>
-            <button id="clearConsoleBtn" class="button">ログをクリア</button>
+          <div class="notebook-toolbar">
+            <button id="addCellBtn" class="nb-tool-btn" type="button">+ セル</button>
+            <button id="runCellBtn" class="nb-tool-btn primary" type="button">▶ 実行</button>
+            <button id="runAllBtn" class="nb-tool-btn" type="button">▶▶ 全実行</button>
+            <button id="stopBtn" class="nb-tool-btn danger" type="button" disabled>⏹ 停止</button>
+            <button id="clearAllOutputBtn" class="nb-tool-btn" type="button">出力クリア</button>
           </div>
           <div class="page-controls">
             <span class="page-label">ページ</span>
@@ -674,11 +957,7 @@
           <div id="connectionHint" class="connection-hint">
             接続できない場合: `python -m uvicorn app.main:app --reload` を実行し、`http://127.0.0.1:8000` で開いてください。
           </div>
-          <div id="leftSplitArea" class="left-split-area">
-            <div id="codeEditor" class="editor"></div>
-            <div id="editorResizeHandle" class="editor-resize-handle" role="separator" aria-orientation="horizontal"></div>
-            <div id="console" class="console"></div>
-          </div>
+          <div id="notebookContainer" class="notebook-container"></div>
         </section>
 
         <div id="paneResizeHandle" class="pane-resize-handle" role="separator" aria-orientation="vertical"></div>
@@ -739,7 +1018,6 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.6/lib/index.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/loader.min.js"></script>
     <script>
       const DEFAULT_CODE = `import time
 
@@ -752,16 +1030,17 @@ print("done")
 
       const runStatusEl = document.getElementById("runStatus");
       const pythonInfoEl = document.getElementById("pythonInfo");
-      const runBtn = document.getElementById("runBtn");
+      const kernelDotEl = document.getElementById("kernelDot");
+      const kernelLabelEl = document.getElementById("kernelLabel");
+      const runCellBtn = document.getElementById("runCellBtn");
+      const runAllBtn = document.getElementById("runAllBtn");
+      const addCellBtn = document.getElementById("addCellBtn");
       const stopBtn = document.getElementById("stopBtn");
-      const clearConsoleBtn = document.getElementById("clearConsoleBtn");
+      const clearAllOutputBtn = document.getElementById("clearAllOutputBtn");
+      const notebookContainerEl = document.getElementById("notebookContainer");
       const appLayoutEl = document.querySelector(".app");
       const leftPaneEl = document.querySelector(".left-pane");
       const paneResizeHandleEl = document.getElementById("paneResizeHandle");
-      const leftSplitAreaEl = document.getElementById("leftSplitArea");
-      const editorResizeHandleEl = document.getElementById("editorResizeHandle");
-      const editorMount = document.getElementById("codeEditor");
-      const consoleEl = document.getElementById("console");
       const fileMenuWrapEl = document.getElementById("fileMenuWrap");
       const fileTabEl = document.getElementById("fileTab");
       const filePanelEl = document.getElementById("filePanel");
@@ -916,16 +1195,31 @@ print("done")
       let reconnectAttempt = 0;
       let disconnectLogged = false;
 
-      let monacoEditor = null;
-      let fallbackEditor = null;
-      let commentHoverDecorationIds = [];
-      let currentCommentHoverKey = "";
-      let commentDisplayMode = "hover";
       let workspacePages = [];
       let activePageIndex = -1;
       let pageSequence = 0;
       let leftPaneWidthPx = null;
-      let editorHeightPx = null;
+
+      // Notebook / cell state
+      let cellSequence = 0;
+      let executionCount = 0;
+      let selectedCellId = null;
+      let runningCellId = null;
+      let runAllQueue = [];
+
+      function buildCellId() {
+        cellSequence++;
+        return `cell-${Date.now()}-${cellSequence}`;
+      }
+
+      function createCellData(code = "") {
+        return {
+          id: buildCellId(),
+          code: String(code),
+          outputs: [],
+          executionCount: null,
+        };
+      }
 
       function setStatus(text, mode = "normal") {
         runStatusEl.textContent = text;
@@ -934,86 +1228,369 @@ print("done")
         if (mode === "error") runStatusEl.classList.add("error");
       }
 
+      function appendCellOutput(cellId, outputItem) {
+        const page = getActivePage();
+        if (!page) return;
+        const cell = page.cells.find((c) => c.id === cellId);
+        if (cell) cell.outputs.push(outputItem);
+
+        let outputEl = document.getElementById(`cell-output-${cellId}`);
+        if (!outputEl) {
+          const cellEl = notebookContainerEl.querySelector(`[data-cell-id="${cellId}"]`);
+          if (!cellEl) return;
+          let outputArea = cellEl.querySelector(".nb-cell-output-area");
+          if (!outputArea) {
+            outputArea = document.createElement("div");
+            outputArea.className = "nb-cell-output-area";
+            const outPrompt = document.createElement("div");
+            outPrompt.className = "nb-cell-prompt out-prompt";
+            outPrompt.textContent = cell && cell.executionCount != null ? `[${cell.executionCount}]:` : "";
+            outputEl = document.createElement("div");
+            outputEl.className = "nb-cell-output";
+            outputEl.id = `cell-output-${cellId}`;
+            outputArea.appendChild(outPrompt);
+            outputArea.appendChild(outputEl);
+            cellEl.appendChild(outputArea);
+          } else {
+            outputEl = outputArea.querySelector(".nb-cell-output");
+          }
+        }
+
+        if (outputEl) {
+          renderOutputItem(outputEl, outputItem);
+        }
+      }
+
+      function renderOutputItem(container, outputItem) {
+        if (outputItem.type === "stdout" || outputItem.type === "stderr" || outputItem.type === "event") {
+          const span = document.createElement("span");
+          span.className = outputItem.type;
+          span.textContent = outputItem.content;
+          container.appendChild(span);
+        } else if (outputItem.type === "display_data") {
+          const data = outputItem.data || {};
+          if (typeof data["image/png"] === "string" && data["image/png"].length > 0) {
+            const wrap = document.createElement("div");
+            wrap.className = "plot-wrap";
+            const img = document.createElement("img");
+            img.className = "plot-image";
+            img.alt = "display_data image/png";
+            img.src = `data:image/png;base64,${data["image/png"]}`;
+            wrap.appendChild(img);
+            container.appendChild(wrap);
+          } else if (typeof data["text/plain"] === "string") {
+            const span = document.createElement("span");
+            span.className = "stdout";
+            span.textContent = data["text/plain"] + "\n";
+            container.appendChild(span);
+          }
+        }
+        const cellEl = container.closest(".nb-cell");
+        if (cellEl) cellEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+
       function appendConsole(text, kind = "stdout") {
-        const chunk = document.createElement("span");
-        chunk.className = kind;
-        chunk.textContent = text;
-        consoleEl.appendChild(chunk);
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+        if (runningCellId) {
+          appendCellOutput(runningCellId, { type: kind, content: text });
+          return;
+        }
       }
 
       function appendEvent(text) {
         appendConsole(`[event] ${text}\n`, "event");
       }
 
-      function appendPlot(base64Png, index) {
-        const wrap = document.createElement("div");
-        wrap.className = "plot-wrap";
-
-        const caption = document.createElement("span");
-        caption.className = "plot-caption";
-        caption.textContent = `plot${Number.isInteger(index) ? ` #${index}` : ""}`;
-
-        const img = document.createElement("img");
-        img.className = "plot-image";
-        img.alt = caption.textContent;
-        img.src = `data:image/png;base64,${base64Png}`;
-
-        wrap.appendChild(caption);
-        wrap.appendChild(img);
-        consoleEl.appendChild(wrap);
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+      function finishCellExecution() {
+        if (runningCellId) {
+          const cellEl = notebookContainerEl.querySelector(`[data-cell-id="${runningCellId}"]`);
+          if (cellEl) cellEl.classList.remove("running");
+          runningCellId = null;
+        }
+        updateKernelIndicator();
+        processRunAllQueue();
       }
 
-      function appendDisplayData(dataBundle, metadataBundle) {
-        const data = dataBundle || {};
-        const metadata = metadataBundle || {};
+      function updateKernelIndicator() {
+        const connected = socket && socket.readyState === WebSocket.OPEN;
+        kernelDotEl.classList.toggle("connected", connected && !running);
+        kernelDotEl.classList.toggle("running", running);
+        kernelLabelEl.textContent = running ? "Busy" : connected ? "Idle" : "Disconnected";
+      }
 
-        if (typeof data["image/png"] === "string" && data["image/png"].length > 0) {
-          const wrap = document.createElement("div");
-          wrap.className = "plot-wrap";
+      function autoResizeTextarea(textarea) {
+        if (!textarea) return;
+        textarea.style.height = "auto";
+        textarea.style.height = Math.max(56, textarea.scrollHeight) + "px";
+      }
 
-          const caption = document.createElement("span");
-          caption.className = "plot-caption";
-          caption.textContent = "display_data image/png";
+      function selectCell(cellId) {
+        selectedCellId = cellId;
+        notebookContainerEl.querySelectorAll(".nb-cell").forEach((el) => {
+          el.classList.toggle("selected", el.dataset.cellId === cellId);
+        });
+      }
 
-          const img = document.createElement("img");
-          img.className = "plot-image";
-          img.alt = "display_data image/png";
-          img.src = `data:image/png;base64,${data["image/png"]}`;
+      function captureCellCode(cellId) {
+        const cellEl = notebookContainerEl.querySelector(`[data-cell-id="${cellId}"]`);
+        if (!cellEl) return;
+        const textarea = cellEl.querySelector(".nb-cell-code");
+        if (!textarea) return;
+        const page = getActivePage();
+        if (!page) return;
+        const cell = page.cells.find((c) => c.id === cellId);
+        if (cell) cell.code = textarea.value;
+      }
 
-          wrap.appendChild(caption);
-          wrap.appendChild(img);
-          consoleEl.appendChild(wrap);
-          consoleEl.scrollTop = consoleEl.scrollHeight;
+      function captureAllCellCodes() {
+        const page = getActivePage();
+        if (!page) return;
+        page.cells.forEach((cell) => captureCellCode(cell.id));
+      }
+
+      function runCell(cellId) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          appendCellOutput(cellId, { type: "stderr", content: "[error] WebSocket is not connected.\n" });
           return;
         }
+        if (running) return;
 
-        if (typeof data["text/plain"] === "string" && data["text/plain"].length > 0) {
-          appendConsole(`${data["text/plain"]}\n`, "stdout");
-          return;
+        const page = getActivePage();
+        if (!page) return;
+        const cell = page.cells.find((c) => c.id === cellId);
+        if (!cell) return;
+
+        captureCellCode(cellId);
+        if (!cell.code.trim()) return;
+
+        cell.outputs = [];
+        executionCount++;
+        cell.executionCount = executionCount;
+        runningCellId = cellId;
+
+        const cellEl = notebookContainerEl.querySelector(`[data-cell-id="${cellId}"]`);
+        if (cellEl) {
+          cellEl.classList.add("running");
+          const prompt = cellEl.querySelector(".nb-cell-prompt");
+          if (prompt) prompt.textContent = `In [${executionCount}]:`;
+          let outputArea = cellEl.querySelector(".nb-cell-output-area");
+          if (outputArea) outputArea.remove();
+          outputArea = document.createElement("div");
+          outputArea.className = "nb-cell-output-area";
+          const outPrompt = document.createElement("div");
+          outPrompt.className = "nb-cell-prompt out-prompt";
+          const outputContent = document.createElement("div");
+          outputContent.className = "nb-cell-output";
+          outputContent.id = `cell-output-${cellId}`;
+          outputArea.appendChild(outPrompt);
+          outputArea.appendChild(outputContent);
+          cellEl.appendChild(outputArea);
         }
 
-        appendConsole(`[display_data] ${JSON.stringify({ data, metadata })}\n`, "event");
+        updateKernelIndicator();
+        socket.send(JSON.stringify({ type: "run", code: cell.code }));
       }
 
-      function getCodeValue() {
-        if (monacoEditor) return monacoEditor.getValue();
-        if (fallbackEditor) return fallbackEditor.value;
-        return "";
+      function runAllCells() {
+        const page = getActivePage();
+        if (!page || page.cells.length === 0) return;
+        captureAllCellCodes();
+        runAllQueue = page.cells.map((c) => c.id).slice();
+        processRunAllQueue();
       }
 
-      function setCodeValue(code) {
-        const nextCode = String(code ?? "");
-        if (monacoEditor) {
-          monacoEditor.setValue(nextCode);
-          return true;
+      function processRunAllQueue() {
+        if (running || runAllQueue.length === 0) return;
+        const nextCellId = runAllQueue.shift();
+        if (nextCellId) runCell(nextCellId);
+      }
+
+      function clearAllOutputs() {
+        const page = getActivePage();
+        if (!page) return;
+        page.cells.forEach((cell) => {
+          cell.outputs = [];
+          cell.executionCount = null;
+        });
+        renderNotebook();
+      }
+
+      function addNewCell(afterCellId = null) {
+        const page = getActivePage();
+        if (!page) return;
+        captureAllCellCodes();
+
+        const newCell = createCellData("");
+        if (afterCellId) {
+          const index = page.cells.findIndex((c) => c.id === afterCellId);
+          if (index >= 0) {
+            page.cells.splice(index + 1, 0, newCell);
+          } else {
+            page.cells.push(newCell);
+          }
+        } else {
+          page.cells.push(newCell);
         }
-        if (fallbackEditor) {
-          fallbackEditor.value = nextCode;
-          return true;
+
+        selectedCellId = newCell.id;
+        renderNotebook();
+
+        const cellEl = notebookContainerEl.querySelector(`[data-cell-id="${newCell.id}"]`);
+        if (cellEl) {
+          const textarea = cellEl.querySelector(".nb-cell-code");
+          if (textarea) textarea.focus();
+          cellEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
         }
-        return false;
+      }
+
+      function deleteCellById(cellId) {
+        const page = getActivePage();
+        if (!page || page.cells.length <= 1) return;
+        captureAllCellCodes();
+
+        const index = page.cells.findIndex((c) => c.id === cellId);
+        if (index < 0) return;
+
+        page.cells.splice(index, 1);
+        if (selectedCellId === cellId) {
+          selectedCellId = page.cells[Math.min(index, page.cells.length - 1)].id;
+        }
+        renderNotebook();
+      }
+
+      function createCellElement(cell) {
+        const cellEl = document.createElement("div");
+        cellEl.className = "nb-cell";
+        cellEl.dataset.cellId = cell.id;
+        if (cell.id === selectedCellId) cellEl.classList.add("selected");
+        if (cell.id === runningCellId) cellEl.classList.add("running");
+
+        // Input area
+        const inputArea = document.createElement("div");
+        inputArea.className = "nb-cell-input-area";
+
+        const prompt = document.createElement("div");
+        prompt.className = "nb-cell-prompt";
+        prompt.textContent = cell.executionCount != null ? `In [${cell.executionCount}]:` : "In [ ]:";
+
+        const editorWrap = document.createElement("div");
+        editorWrap.className = "nb-cell-editor-wrap";
+
+        const textarea = document.createElement("textarea");
+        textarea.className = "nb-cell-code";
+        textarea.value = cell.code;
+        textarea.spellcheck = false;
+
+        textarea.addEventListener("input", () => {
+          cell.code = textarea.value;
+          autoResizeTextarea(textarea);
+        });
+
+        textarea.addEventListener("keydown", (e) => {
+          if (e.key === "Tab" && !e.shiftKey) {
+            e.preventDefault();
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            textarea.value = textarea.value.substring(0, start) + "    " + textarea.value.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + 4;
+            cell.code = textarea.value;
+          }
+          if (e.key === "Enter" && e.shiftKey) {
+            e.preventDefault();
+            runCell(cell.id);
+          }
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            runCell(cell.id);
+          }
+        });
+
+        textarea.addEventListener("focus", () => {
+          selectCell(cell.id);
+        });
+
+        editorWrap.appendChild(textarea);
+        inputArea.appendChild(prompt);
+        inputArea.appendChild(editorWrap);
+        cellEl.appendChild(inputArea);
+
+        // Actions bar
+        const actions = document.createElement("div");
+        actions.className = "nb-cell-actions";
+
+        const runBtn = document.createElement("button");
+        runBtn.className = "nb-cell-action-btn run-btn";
+        runBtn.textContent = "▶ 実行";
+        runBtn.title = "Shift+Enter";
+        runBtn.addEventListener("click", () => runCell(cell.id));
+
+        const addBelowBtn = document.createElement("button");
+        addBelowBtn.className = "nb-cell-action-btn";
+        addBelowBtn.textContent = "+ 下に追加";
+        addBelowBtn.addEventListener("click", () => addNewCell(cell.id));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "nb-cell-action-btn";
+        deleteBtn.textContent = "✕ 削除";
+        deleteBtn.addEventListener("click", () => deleteCellById(cell.id));
+
+        actions.appendChild(runBtn);
+        actions.appendChild(addBelowBtn);
+        actions.appendChild(deleteBtn);
+        cellEl.appendChild(actions);
+
+        // Output area
+        if (cell.outputs.length > 0) {
+          const outputArea = document.createElement("div");
+          outputArea.className = "nb-cell-output-area";
+
+          const outPrompt = document.createElement("div");
+          outPrompt.className = "nb-cell-prompt out-prompt";
+          outPrompt.textContent = cell.executionCount != null ? `[${cell.executionCount}]:` : "";
+
+          const outputContent = document.createElement("div");
+          outputContent.className = "nb-cell-output";
+          outputContent.id = `cell-output-${cell.id}`;
+
+          cell.outputs.forEach((out) => {
+            renderOutputItem(outputContent, out);
+          });
+
+          outputArea.appendChild(outPrompt);
+          outputArea.appendChild(outputContent);
+          cellEl.appendChild(outputArea);
+        }
+
+        cellEl.addEventListener("click", (e) => {
+          if (e.target === textarea) return;
+          selectCell(cell.id);
+        });
+
+        requestAnimationFrame(() => autoResizeTextarea(textarea));
+        return cellEl;
+      }
+
+      function renderNotebook() {
+        const page = getActivePage();
+        if (!page) return;
+        captureAllCellCodes();
+        notebookContainerEl.innerHTML = "";
+        page.cells.forEach((cell) => {
+          notebookContainerEl.appendChild(createCellElement(cell));
+        });
+
+        // Add cell bar at bottom
+        const bar = document.createElement("div");
+        bar.className = "nb-add-cell-bar";
+        const btn = document.createElement("button");
+        btn.className = "nb-add-cell-btn";
+        btn.textContent = "+ セルを追加";
+        btn.addEventListener("click", () => addNewCell());
+        bar.appendChild(btn);
+        notebookContainerEl.appendChild(bar);
+
+        if (!selectedCellId && page.cells.length > 0) {
+          selectCell(page.cells[0].id);
+        }
       }
 
       function setFilePanelOpen(open) {
@@ -1026,20 +1603,6 @@ print("done")
         settingsTabEl.classList.toggle("active", open);
       }
 
-      function applyCommentDisplayMode(mode) {
-        const normalized = mode === "full" ? "full" : "hover";
-        commentDisplayMode = normalized;
-        showAllCommentsToggleEl.checked = normalized === "full";
-
-        if (!window.monaco || !monacoEditor) return;
-        window.monaco.editor.setTheme(
-          normalized === "full" ? "training-dark-default" : "training-dark-muted"
-        );
-        if (normalized === "full") {
-          applyCommentHoverDecoration(null);
-        }
-      }
-
       function deepCloneJson(value) {
         if (value === null || value === undefined) return null;
         return JSON.parse(JSON.stringify(value));
@@ -1048,9 +1611,6 @@ print("done")
       const APP_SPLITTER_WIDTH = 12;
       const APP_MIN_LEFT_WIDTH = 360;
       const APP_MIN_RIGHT_WIDTH = 320;
-      const LEFT_SPLITTER_HEIGHT = 10;
-      const LEFT_MIN_EDITOR_HEIGHT = 160;
-      const LEFT_MIN_CONSOLE_HEIGHT = 140;
       const MOBILE_BREAKPOINT = 980;
 
       function clampNumber(value, min, max) {
@@ -1059,12 +1619,6 @@ print("done")
 
       function isMobileLayout() {
         return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
-      }
-
-      function layoutMonacoEditor() {
-        if (monacoEditor) {
-          monacoEditor.layout();
-        }
       }
 
       function applyPaneSplit(widthPx) {
@@ -1077,14 +1631,12 @@ print("done")
         if (maxLeft <= minLeft) {
           appLayoutEl.style.gridTemplateColumns = `minmax(${APP_MIN_LEFT_WIDTH}px, 1fr) ${APP_SPLITTER_WIDTH}px minmax(${APP_MIN_RIGHT_WIDTH}px, 1fr)`;
           leftPaneWidthPx = minLeft;
-          layoutMonacoEditor();
           return;
         }
 
         const nextLeft = clampNumber(widthPx, minLeft, maxLeft);
         leftPaneWidthPx = nextLeft;
         appLayoutEl.style.gridTemplateColumns = `${nextLeft}px ${APP_SPLITTER_WIDTH}px minmax(${APP_MIN_RIGHT_WIDTH}px, 1fr)`;
-        layoutMonacoEditor();
       }
 
       function syncPaneSplitLayout() {
@@ -1095,34 +1647,6 @@ print("done")
         }
         const fallback = Math.round(appLayoutEl.clientWidth * 0.52);
         applyPaneSplit(leftPaneWidthPx || fallback);
-      }
-
-      function applyEditorSplit(heightPx) {
-        if (!leftSplitAreaEl) return;
-
-        const totalHeight = Math.max(0, leftSplitAreaEl.clientHeight);
-        const minEditor = LEFT_MIN_EDITOR_HEIGHT;
-        const maxEditor = totalHeight - LEFT_SPLITTER_HEIGHT - LEFT_MIN_CONSOLE_HEIGHT;
-
-        if (maxEditor <= minEditor) {
-          leftSplitAreaEl.style.gridTemplateRows = `minmax(${LEFT_MIN_EDITOR_HEIGHT}px, 1fr) ${LEFT_SPLITTER_HEIGHT}px minmax(${LEFT_MIN_CONSOLE_HEIGHT}px, 1fr)`;
-          editorHeightPx = minEditor;
-          layoutMonacoEditor();
-          return;
-        }
-
-        const nextEditorHeight = clampNumber(heightPx, minEditor, maxEditor);
-        editorHeightPx = nextEditorHeight;
-        leftSplitAreaEl.style.gridTemplateRows = `${nextEditorHeight}px ${LEFT_SPLITTER_HEIGHT}px minmax(${LEFT_MIN_CONSOLE_HEIGHT}px, 1fr)`;
-        layoutMonacoEditor();
-      }
-
-      function syncEditorSplitLayout() {
-        if (!leftSplitAreaEl) return;
-        const totalHeight = leftSplitAreaEl.clientHeight;
-        if (totalHeight <= 0) return;
-        const fallback = Math.round(totalHeight * 0.56);
-        applyEditorSplit(editorHeightPx || fallback);
       }
 
       function startPaneResize(event) {
@@ -1147,33 +1671,6 @@ print("done")
           window.removeEventListener("pointerup", cleanup);
           window.removeEventListener("pointercancel", cleanup);
           resizeBoardToWrapper();
-        };
-
-        window.addEventListener("pointermove", onMove);
-        window.addEventListener("pointerup", cleanup);
-        window.addEventListener("pointercancel", cleanup);
-      }
-
-      function startEditorResize(event) {
-        if (!editorResizeHandleEl || !editorMount) return;
-        event.preventDefault();
-
-        const startY = event.clientY;
-        const startHeight = editorHeightPx || editorMount.getBoundingClientRect().height;
-        document.body.classList.add("resizing-row");
-        withOptionalPointerCapture(editorResizeHandleEl, event.pointerId, "set");
-
-        const onMove = (moveEvent) => {
-          const deltaY = moveEvent.clientY - startY;
-          applyEditorSplit(startHeight + deltaY);
-        };
-
-        const cleanup = () => {
-          document.body.classList.remove("resizing-row");
-          withOptionalPointerCapture(editorResizeHandleEl, event.pointerId, "release");
-          window.removeEventListener("pointermove", onMove);
-          window.removeEventListener("pointerup", cleanup);
-          window.removeEventListener("pointercancel", cleanup);
         };
 
         window.addEventListener("pointermove", onMove);
@@ -1241,11 +1738,14 @@ print("done")
         return `page-${Date.now()}-${pageSequence}`;
       }
 
-      function createWorkspacePage({ name, code = "", board = null } = {}) {
+      function createWorkspacePage({ name, code = "", cells = null, board = null } = {}) {
+        const pageCells = cells && cells.length > 0
+          ? cells.map((c) => createCellData(c.code || ""))
+          : [createCellData(code || DEFAULT_CODE)];
         return {
           id: buildPageId(),
           name: sanitizePageName(name),
-          code: String(code ?? ""),
+          cells: pageCells,
           board: extractCanvasSerializedFromJsonValue(board),
         };
       }
@@ -1287,7 +1787,7 @@ print("done")
       function captureActivePageState() {
         const page = getActivePage();
         if (!page) return;
-        page.code = getCodeValue();
+        captureAllCellCodes();
         const boardSnapshot = getBoardSnapshot();
         if (boardSnapshot) {
           page.board = boardSnapshot;
@@ -1298,13 +1798,10 @@ print("done")
         const page = getActivePage();
         if (!page) return;
 
-        setCodeValue(page.code);
+        selectedCellId = null;
+        renderNotebook();
         if (board) {
           loadBoardFromSerialized(page.board, { announce: false });
-        }
-
-        if (announce) {
-          appendEvent(`ページ切替: ${page.name}`);
         }
       }
 
@@ -1322,24 +1819,21 @@ print("done")
 
       function replaceWorkspacePages(pages, sourceLabel = "セット") {
         const normalizedPages = Array.isArray(pages)
-          ? pages.filter((page) => page && (page.code || page.board))
+          ? pages.filter((page) => page && (page.code || page.cells || page.board))
           : [];
-        if (!normalizedPages.length) {
-          appendConsole("[error] 読み込み可能なページがありませんでした。\n", "stderr");
-          return;
-        }
+        if (!normalizedPages.length) return;
 
         workspacePages = normalizedPages.map((page, index) =>
           createWorkspacePage({
             name: sanitizePageName(page.name, `Page ${index + 1}`),
             code: page.code,
+            cells: page.cells,
             board: page.board,
           })
         );
         activePageIndex = 0;
         refreshPageSelector();
         applyActivePageState({ announce: false });
-        appendEvent(`${sourceLabel} を読み込みました（${workspacePages.length}ページ）。`);
       }
 
       function addWorkspacePage() {
@@ -1351,23 +1845,16 @@ print("done")
         });
         workspacePages.push(nextPage);
         switchToPage(workspacePages.length - 1, { captureCurrent: false, announce: false });
-        appendEvent(`ページを追加しました: ${nextPage.name}`);
       }
 
       function removeActiveWorkspacePage() {
-        if (workspacePages.length <= 1) {
-          appendEvent("最低1ページは必要です。");
-          return;
-        }
-        const currentPage = getActivePage();
-        const removedName = currentPage ? currentPage.name : "";
+        if (workspacePages.length <= 1) return;
         workspacePages.splice(activePageIndex, 1);
         if (activePageIndex >= workspacePages.length) {
           activePageIndex = workspacePages.length - 1;
         }
         refreshPageSelector();
         applyActivePageState({ announce: false });
-        appendEvent(`ページを削除しました: ${removedName}`);
       }
 
       function initializeWorkspacePages() {
@@ -1394,17 +1881,17 @@ print("done")
 
       async function importPythonFile(file) {
         const code = await readTextFromFile(file);
-        if (!setCodeValue(code)) {
-          appendConsole("[error] エディタ初期化前のため .py を読み込めませんでした。\n", "stderr");
-          return;
-        }
         const currentPage = getActivePage();
         if (currentPage) {
-          currentPage.code = code;
+          if (currentPage.cells.length > 0) {
+            currentPage.cells[0].code = code;
+          } else {
+            currentPage.cells.push(createCellData(code));
+          }
           currentPage.name = sanitizePageName(stripFileExtension(file.name), currentPage.name);
+          renderNotebook();
         }
         refreshPageSelector();
-        appendEvent(`Pythonファイルを読み込みました: ${file.name}`);
       }
 
       async function importJsonFile(file) {
@@ -1448,7 +1935,8 @@ print("done")
           exportedAt: new Date().toISOString(),
           pages: workspacePages.map((page, index) => ({
             name: sanitizePageName(page.name, `Page ${index + 1}`),
-            code: String(page.code || ""),
+            code: page.cells.map((c) => c.code).join("\n"),
+            cells: page.cells.map((c) => ({ code: c.code })),
             board: page.board ? deepCloneJson(page.board) : null,
           })),
         };
@@ -1462,29 +1950,23 @@ print("done")
         anchor.download = `workspace-set-${timestamp}.json`;
         anchor.click();
         URL.revokeObjectURL(url);
-        appendEvent(`ページセットを保存しました（${workspacePages.length}ページ）。`);
       }
 
       function importWorkspaceSetFromObject(value, sourceName = "セットJSON") {
-        if (!value || typeof value !== "object" || !Array.isArray(value.pages)) {
-          appendConsole("[error] ページセットJSONの形式が不正です。\n", "stderr");
-          return;
-        }
+        if (!value || typeof value !== "object" || !Array.isArray(value.pages)) return;
 
         const importedPages = value.pages
           .map((page, index) => {
             if (!page || typeof page !== "object") return null;
             const name = sanitizePageName(page.name, `Page ${index + 1}`);
             const code = typeof page.code === "string" ? page.code : "";
+            const cells = Array.isArray(page.cells) ? page.cells : null;
             const board = extractCanvasSerializedFromJsonValue(page.board);
-            return createWorkspacePage({ name, code, board });
+            return createWorkspacePage({ name, code, cells, board });
           })
           .filter(Boolean);
 
-        if (!importedPages.length) {
-          appendConsole("[error] ページセット内に有効なページがありません。\n", "stderr");
-          return;
-        }
+        if (!importedPages.length) return;
         replaceWorkspacePages(importedPages, `ページセット(${sourceName})`);
       }
 
@@ -1609,8 +2091,10 @@ print("done")
 
       function updateButtons() {
         const connected = socket && socket.readyState === WebSocket.OPEN;
-        runBtn.disabled = running || !connected;
+        runCellBtn.disabled = running || !connected;
+        runAllBtn.disabled = running || !connected;
         stopBtn.disabled = !running;
+        updateKernelIndicator();
       }
 
       async function fetchHealth() {
@@ -1661,17 +2145,13 @@ print("done")
           }
           setStatus("接続済み");
           fetchHealth();
-          appendEvent("WebSocket connected");
           updateButtons();
         });
 
         socket.addEventListener("close", () => {
           running = false;
+          finishCellExecution();
           updateButtons();
-          if (!disconnectLogged) {
-            appendEvent("WebSocket disconnected. バックエンドを起動してください。");
-            disconnectLogged = true;
-          }
           scheduleReconnect();
         });
 
@@ -1680,34 +2160,51 @@ print("done")
           try {
             msg = JSON.parse(event.data);
           } catch {
-            appendConsole(`[parse error] ${event.data}\n`, "stderr");
             return;
           }
 
           if (msg.type === "stdout") {
-            appendConsole(msg.data, "stdout");
+            if (runningCellId) {
+              appendCellOutput(runningCellId, { type: "stdout", content: msg.data });
+            }
             return;
           }
 
           if (msg.type === "stderr") {
-            appendConsole(msg.data, "stderr");
-            return;
-          }
-
-          if (msg.type === "plot") {
-            appendPlot(msg.data, msg.index);
+            if (runningCellId) {
+              appendCellOutput(runningCellId, { type: "stderr", content: msg.data });
+            }
             return;
           }
 
           if (msg.type === "display_data") {
-            appendDisplayData(msg.data, msg.metadata);
+            if (runningCellId) {
+              appendCellOutput(runningCellId, {
+                type: "display_data",
+                data: msg.data || {},
+                metadata: msg.metadata || {},
+              });
+            }
+            return;
+          }
+
+          if (msg.type === "plot") {
+            if (runningCellId && msg.data) {
+              appendCellOutput(runningCellId, {
+                type: "display_data",
+                data: { "image/png": msg.data },
+              });
+            }
             return;
           }
 
           if (msg.type === "error") {
-            appendConsole(`[error] ${msg.message}\n`, "stderr");
+            if (runningCellId) {
+              appendCellOutput(runningCellId, { type: "stderr", content: `[error] ${msg.message}\n` });
+            }
             setStatus("エラー", "error");
             running = false;
+            finishCellExecution();
             updateButtons();
             return;
           }
@@ -1716,228 +2213,50 @@ print("done")
             if (msg.state === "started") {
               running = true;
               setStatus("実行中...", "running");
-              appendEvent("Execution started");
             } else if (msg.state === "aborting") {
               setStatus("停止処理中...", "running");
             } else if (msg.state === "aborted") {
               running = false;
               setStatus("停止しました");
-              appendEvent("Execution aborted");
+              finishCellExecution();
             } else if (msg.state === "timeout") {
               running = false;
               setStatus("タイムアウト", "error");
-              appendEvent(msg.message || "Execution timeout");
+              finishCellExecution();
             } else if (msg.state === "finished") {
               running = false;
-              const code = Number.isInteger(msg.returnCode) ? ` (code=${msg.returnCode})` : "";
-              setStatus(`完了${code}`);
-              appendEvent(`Execution finished${code}`);
+              const rc = Number.isInteger(msg.returnCode) ? ` (code=${msg.returnCode})` : "";
+              setStatus(`完了${rc}`);
+              finishCellExecution();
             }
             updateButtons();
           }
         });
       }
 
-      function createFallbackEditor() {
-        const textarea = document.createElement("textarea");
-        textarea.className = "editor-fallback";
-        textarea.spellcheck = false;
-        const activePage = getActivePage();
-        textarea.value = activePage ? activePage.code : DEFAULT_CODE;
-        editorMount.appendChild(textarea);
-        fallbackEditor = textarea;
-        showAllCommentsToggleEl.disabled = true;
-        appendEvent("Monaco Editor を読み込めなかったため、標準エディタで動作中。");
-        appendEvent("コメント表示設定は Monaco Editor 使用時のみ有効です。");
-      }
+      runCellBtn.addEventListener("click", () => {
+        if (selectedCellId) runCell(selectedCellId);
+      });
 
-      function loadMonaco() {
-        return new Promise((resolve, reject) => {
-          if (window.monaco && window.monaco.editor) {
-            resolve();
-            return;
-          }
-          if (typeof window.require !== "function") {
-            reject(new Error("Monaco loader is not available"));
-            return;
-          }
-          window.require.config({
-            paths: {
-              vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs",
-            },
-          });
-          window.require(["vs/editor/editor.main"], resolve, reject);
-        });
-      }
+      runAllBtn.addEventListener("click", () => {
+        runAllCells();
+      });
 
-      function configureMonacoThemes() {
-        const commonColors = {
-          "editor.background": "#0d1726",
-          "editor.foreground": "#d9e6ff",
-          "editorLineNumber.foreground": "#586884",
-          "editorLineNumber.activeForeground": "#8fb2ff",
-          "editor.selectionBackground": "#314868",
-        };
-
-        window.monaco.editor.defineTheme("training-dark-muted", {
-          base: "vs-dark",
-          inherit: true,
-          rules: [
-            { token: "comment", foreground: "1D2736" },
-            { token: "comment.line", foreground: "1D2736" },
-            { token: "comment.block", foreground: "1D2736" },
-          ],
-          colors: commonColors,
-        });
-
-        window.monaco.editor.defineTheme("training-dark-default", {
-          base: "vs-dark",
-          inherit: true,
-          rules: [
-            { token: "comment", foreground: "6A9955" },
-            { token: "comment.line", foreground: "6A9955" },
-            { token: "comment.block", foreground: "6A9955" },
-          ],
-          colors: commonColors,
-        });
-      }
-
-      function tokenStart(token) {
-        if (typeof token.startIndex === "number") return token.startIndex;
-        if (typeof token.offset === "number") return token.offset;
-        return 0;
-      }
-
-      function getCommentRangeAtPosition(position) {
-        if (!monacoEditor || !window.monaco) return null;
-        const model = monacoEditor.getModel();
-        if (!model) return null;
-
-        const lineContent = model.getLineContent(position.lineNumber);
-        if (!lineContent) return null;
-
-        const pointerOffset = Math.max(0, Math.min(lineContent.length - 1, position.column - 1));
-        const tokenized = window.monaco.editor.tokenize(lineContent, model.getLanguageId());
-        const tokens = Array.isArray(tokenized) && tokenized[0] ? tokenized[0] : [];
-        if (!tokens.length) return null;
-
-        for (let i = 0; i < tokens.length; i += 1) {
-          const start = tokenStart(tokens[i]);
-          const end =
-            i + 1 < tokens.length ? Math.max(start, tokenStart(tokens[i + 1])) : lineContent.length;
-          if (pointerOffset < start || pointerOffset >= end) continue;
-
-          const scope = String(tokens[i].scopes || tokens[i].type || "");
-          if (!scope.includes("comment")) return null;
-
-          return new window.monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1);
-        }
-        return null;
-      }
-
-      function applyCommentHoverDecoration(range) {
-        if (!monacoEditor || !window.monaco) return;
-        if (commentDisplayMode !== "hover") {
-          if (commentHoverDecorationIds.length > 0) {
-            commentHoverDecorationIds = monacoEditor.deltaDecorations(commentHoverDecorationIds, []);
-          }
-          currentCommentHoverKey = "";
-          return;
-        }
-
-        const nextKey = range
-          ? `${range.startLineNumber}:${range.startColumn}:${range.endLineNumber}:${range.endColumn}`
-          : "";
-        if (nextKey === currentCommentHoverKey) return;
-        currentCommentHoverKey = nextKey;
-
-        const decorations = range
-          ? [
-              {
-                range,
-                options: {
-                  inlineClassName: "hover-comment-highlight",
-                },
-              },
-            ]
-          : [];
-
-        commentHoverDecorationIds = monacoEditor.deltaDecorations(commentHoverDecorationIds, decorations);
-      }
-
-      function setupCommentHoverBehavior() {
-        if (!monacoEditor) return;
-        monacoEditor.onMouseMove((event) => {
-          if (commentDisplayMode !== "hover") {
-            applyCommentHoverDecoration(null);
-            return;
-          }
-
-          const pos = event.target && event.target.position;
-          if (!pos) {
-            applyCommentHoverDecoration(null);
-            return;
-          }
-          applyCommentHoverDecoration(getCommentRangeAtPosition(pos));
-        });
-        monacoEditor.onMouseLeave(() => {
-          applyCommentHoverDecoration(null);
-        });
-        monacoEditor.onDidChangeModelContent(() => {
-          applyCommentHoverDecoration(null);
-        });
-      }
-
-      async function initEditor() {
-        try {
-          await loadMonaco();
-          configureMonacoThemes();
-          const activePage = getActivePage();
-          monacoEditor = window.monaco.editor.create(editorMount, {
-            value: activePage ? activePage.code : DEFAULT_CODE,
-            language: "python",
-            theme: "training-dark-muted",
-            automaticLayout: true,
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineNumbers: "on",
-            tabSize: 4,
-            insertSpaces: true,
-          });
-          setupCommentHoverBehavior();
-          applyCommentDisplayMode(commentDisplayMode);
-        } catch (_error) {
-          createFallbackEditor();
-        }
-      }
-
-      runBtn.addEventListener("click", () => {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-          appendConsole("[error] WebSocket is not connected.\n", "stderr");
-          return;
-        }
-        if (running) return;
-        captureActivePageState();
-        consoleEl.textContent = "";
-        socket.send(
-          JSON.stringify({
-            type: "run",
-            code: getCodeValue(),
-          })
-        );
+      addCellBtn.addEventListener("click", () => {
+        addNewCell(selectedCellId);
       });
 
       stopBtn.addEventListener("click", () => {
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        runAllQueue = [];
         socket.send(JSON.stringify({ type: "abort" }));
       });
 
-      clearConsoleBtn.addEventListener("click", () => {
-        consoleEl.textContent = "";
+      clearAllOutputBtn.addEventListener("click", () => {
+        clearAllOutputs();
       });
 
       paneResizeHandleEl.addEventListener("pointerdown", startPaneResize);
-      editorResizeHandleEl.addEventListener("pointerdown", startEditorResize);
 
       fileTabEl.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -2019,10 +2338,6 @@ print("done")
         setSettingsPanelOpen(open);
       });
 
-      showAllCommentsToggleEl.addEventListener("change", () => {
-        applyCommentDisplayMode(showAllCommentsToggleEl.checked ? "full" : "hover");
-      });
-
       function isEditableDomTarget(target) {
         if (!(target instanceof HTMLElement)) return false;
         if (target.isContentEditable) return true;
@@ -2032,12 +2347,8 @@ print("done")
       }
 
       function isCodeEditorTextFocus() {
-        if (monacoEditor && typeof monacoEditor.hasTextFocus === "function" && monacoEditor.hasTextFocus()) {
-          return true;
-        }
-        if (fallbackEditor && document.activeElement === fallbackEditor) {
-          return true;
-        }
+        const active = document.activeElement;
+        if (active && active.classList.contains("nb-cell-code")) return true;
         return false;
       }
 
@@ -2096,16 +2407,10 @@ print("done")
       });
 
       initializeWorkspacePages();
-      applyCommentDisplayMode("hover");
       syncPaneSplitLayout();
-      syncEditorSplitLayout();
-
-      initEditor().finally(() => {
-        connectSocket();
-        updateButtons();
-        syncPaneSplitLayout();
-        syncEditorSplitLayout();
-      });
+      renderNotebook();
+      connectSocket();
+      updateButtons();
 
       // ---- Canvas area ----
       const fileInput = document.getElementById("fileInput");
@@ -3184,7 +3489,6 @@ print("done")
 
       window.addEventListener("resize", () => {
         syncPaneSplitLayout();
-        syncEditorSplitLayout();
         resizeBoardToWrapper();
       });
 
