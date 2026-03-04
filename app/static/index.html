@@ -437,12 +437,14 @@
 
       .tool-group {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 6px;
         padding: 4px 6px;
         border: 1px solid #d7e3f3;
         border-radius: 8px;
         background: #ffffff;
+        max-width: 100%;
       }
 
       .tool-button {
@@ -684,7 +686,7 @@
         <section class="pane right-pane">
           <div class="pane-header">
             <span>Canvas資料エリア</span>
-            <span class="status">画像・テキスト・ペン・レーザー対応</span>
+            <span class="status">画像・Markdown編集/プレビュー切替・テキスト・ペン・レーザー対応</span>
           </div>
           <div class="canvas-toolbar">
             <div class="tool-group">
@@ -692,6 +694,7 @@
                 画像を追加
                 <input id="fileInput" type="file" accept="image/*" multiple />
               </label>
+              <button id="addMarkdownBtn" class="button">.md追加</button>
               <button id="addTextBtn" class="button">テキスト追加</button>
             </div>
             <div class="tool-group">
@@ -732,6 +735,10 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.6/lib/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.49.0/min/vs/loader.min.js"></script>
     <script>
       const DEFAULT_CODE = `import time
@@ -774,6 +781,134 @@ print("done")
       const removePageBtn = document.getElementById("removePageBtn");
 
       const WORKSPACE_SET_SCHEMA_VERSION = 1;
+      const BOARD_SERIALIZE_PROPERTIES = [
+        "selectable",
+        "evented",
+        "editable",
+        "isMarkdownSource",
+        "isMarkdownRender",
+        "markdownSourceId",
+      ];
+
+      function configureMarkdownEngine() {
+        if (!window.marked || typeof window.marked.use !== "function") return;
+        if (!window.katex || typeof window.markedKatex !== "function") return;
+
+        window.marked.use(
+          window.markedKatex({
+            throwOnError: false,
+            output: "mathml",
+            nonStandard: true,
+          })
+        );
+      }
+
+      configureMarkdownEngine();
+
+      const MARKDOWN_RENDER_THEME_CSS = `
+        .md-render-root {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 14px 16px;
+          width: 100%;
+          min-height: 100%;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+          font-size: 15px;
+          line-height: 1.6;
+          color: #0f172a;
+          background: #ffffff;
+        }
+        .md-render-root * {
+          box-sizing: border-box;
+        }
+        .md-render-root h1, .md-render-root h2, .md-render-root h3, .md-render-root h4, .md-render-root h5, .md-render-root h6 {
+          margin: 0.7em 0 0.4em;
+          line-height: 1.25;
+          color: #0b2b5d;
+        }
+        .md-render-root h1 { font-size: 1.65em; }
+        .md-render-root h2 { font-size: 1.42em; }
+        .md-render-root h3 { font-size: 1.2em; }
+        .md-render-root p {
+          margin: 0.5em 0;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        .md-render-root ul, .md-render-root ol {
+          margin: 0.5em 0 0.7em 1.5em;
+          padding: 0;
+        }
+        .md-render-root li {
+          margin: 0.25em 0;
+        }
+        .md-render-root blockquote {
+          margin: 0.9em 0;
+          padding: 0.45em 0.8em;
+          border-left: 4px solid #93c5fd;
+          background: #eff6ff;
+          color: #1e3a8a;
+        }
+        .md-render-root pre {
+          margin: 0.8em 0;
+          padding: 0.7em 0.9em;
+          border-radius: 8px;
+          background: #0f172a;
+          color: #e2e8f0;
+          overflow: auto;
+          font-size: 13px;
+        }
+        .md-render-root code {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+          font-size: 0.92em;
+          background: #e2e8f0;
+          border-radius: 4px;
+          padding: 0.08em 0.32em;
+        }
+        .md-render-root pre code {
+          background: transparent;
+          padding: 0;
+          color: inherit;
+        }
+        .md-render-root math {
+          font-size: 1.05em;
+        }
+        .md-render-root math[display="block"] {
+          display: block;
+          margin: 0.8em 0;
+          overflow-x: auto;
+        }
+        .md-render-root table {
+          margin: 0.85em 0;
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+        }
+        .md-render-root th, .md-render-root td {
+          border: 1px solid #bfdbfe;
+          padding: 6px 8px;
+          vertical-align: top;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        .md-render-root th {
+          background: #dbeafe;
+          font-weight: 700;
+        }
+        .md-render-root hr {
+          border: 0;
+          border-top: 1px solid #cbd5e1;
+          margin: 1em 0;
+        }
+        .md-render-root a {
+          color: #1d4ed8;
+          text-decoration: underline;
+        }
+        .md-render-root img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 6px;
+        }
+      `;
 
       let socket = null;
       let running = false;
@@ -1144,7 +1279,7 @@ print("done")
 
       function getBoardSnapshot() {
         if (!board) return null;
-        const serialized = board.toDatalessJSON(["selectable", "evented", "editable"]);
+        const serialized = board.toDatalessJSON(BOARD_SERIALIZE_PROPERTIES);
         if (!serialized || !Array.isArray(serialized.objects)) return null;
         return deepCloneJson(serialized);
       }
@@ -1974,6 +2109,7 @@ print("done")
 
       // ---- Canvas area ----
       const fileInput = document.getElementById("fileInput");
+      const addMarkdownBtn = document.getElementById("addMarkdownBtn");
       const addTextBtn = document.getElementById("addTextBtn");
       const clearCanvasBtn = document.getElementById("clearCanvasBtn");
       const selectToolBtn = document.getElementById("selectToolBtn");
@@ -1999,6 +2135,9 @@ print("done")
       let boardHeight = 0;
       let canvasZoom = 1;
       let touchGesture = null;
+      let markdownSourceSequence = 0;
+      let markdownMeasureHostEl = null;
+      const markdownRenderVersionBySourceId = new Map();
 
       function clampCanvasZoom(value) {
         return Math.max(MIN_CANVAS_ZOOM, Math.min(MAX_CANVAS_ZOOM, value));
@@ -2208,6 +2347,468 @@ print("done")
         updateCanvasHint();
       }
 
+      function buildMarkdownSourceId() {
+        markdownSourceSequence += 1;
+        return `md-source-${Date.now()}-${markdownSourceSequence}`;
+      }
+
+      function getOrAssignMarkdownSourceId(object) {
+        if (!object) return "";
+        const existing = typeof object.markdownSourceId === "string" ? object.markdownSourceId.trim() : "";
+        if (existing) return existing;
+        const created = buildMarkdownSourceId();
+        object.set("markdownSourceId", created);
+        return created;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeXml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&apos;");
+      }
+
+      function extractDashSegments(line) {
+        const text = String(line || "");
+        if (!/^[\s-]+$/.test(text)) return null;
+        const matches = Array.from(text.matchAll(/-{3,}/g));
+        if (matches.length < 2) return null;
+        return matches.map((match, index) => {
+          const start = Number(match.index || 0);
+          const nextMatch = matches[index + 1];
+          const end = nextMatch ? Number(nextMatch.index || text.length) : text.length;
+          return { start, end };
+        });
+      }
+
+      function splitLineByDashSegments(line, segments) {
+        const text = String(line || "");
+        return segments.map((segment) =>
+          String(text.slice(segment.start, segment.end === undefined ? text.length : segment.end)).trim()
+        );
+      }
+
+      function parseDashTableAt(lines, startIndex) {
+        if (startIndex < 0 || startIndex >= lines.length - 1) return null;
+        const segments = extractDashSegments(lines[startIndex + 1]);
+        if (!segments) return null;
+
+        const header = splitLineByDashSegments(lines[startIndex], segments);
+        if (!header.length || header.every((cell) => !cell)) return null;
+
+        const rows = [];
+        let index = startIndex + 2;
+        while (index < lines.length) {
+          const line = lines[index];
+          if (!line.trim()) break;
+          if (extractDashSegments(line)) break;
+
+          const row = splitLineByDashSegments(line, segments);
+          const hasAny = row.some((cell) => Boolean(cell));
+          if (!hasAny) {
+            index += 1;
+            continue;
+          }
+
+          const lastCol = row.length - 1;
+          const isContinuation =
+            rows.length > 0 && row.slice(0, lastCol).every((cell) => !cell) && Boolean(row[lastCol]);
+          if (isContinuation) {
+            const previous = rows[rows.length - 1];
+            previous[lastCol] = previous[lastCol] ? `${previous[lastCol]}\n${row[lastCol]}` : row[lastCol];
+          } else {
+            rows.push(row);
+          }
+          index += 1;
+        }
+        if (!rows.length) return null;
+
+        if (index < lines.length && extractDashSegments(lines[index])) {
+          index += 1;
+        }
+        return { header, rows, nextIndex: index };
+      }
+
+      function buildDashTableHtml(table) {
+        if (!table || !Array.isArray(table.header) || !Array.isArray(table.rows)) return "";
+        const thead = `<thead><tr>${table.header
+          .map((cell) => `<th>${escapeHtml(cell)}</th>`)
+          .join("")}</tr></thead>`;
+        const tbodyRows = table.rows
+          .map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell).replace(/\n/g, "<br />")}</td>`).join("")}</tr>`)
+          .join("");
+        return `<table>${thead}<tbody>${tbodyRows}</tbody></table>`;
+      }
+
+      function convertDashTablesToHtmlBlocks(markdownText) {
+        const lines = String(markdownText || "").replace(/\r\n?/g, "\n").split("\n");
+        const output = [];
+        let index = 0;
+
+        while (index < lines.length) {
+          const parsed = parseDashTableAt(lines, index);
+          if (!parsed) {
+            output.push(lines[index]);
+            index += 1;
+            continue;
+          }
+
+          output.push("");
+          output.push(buildDashTableHtml(parsed));
+          output.push("");
+          index = parsed.nextIndex;
+        }
+
+        return output.join("\n");
+      }
+
+      function markdownToSafeHtml(markdownText) {
+        const normalized = convertDashTablesToHtmlBlocks(markdownText);
+        let rawHtml = `<pre>${escapeHtml(normalized)}</pre>`;
+        if (window.marked && typeof window.marked.parse === "function") {
+          rawHtml = String(window.marked.parse(normalized, { gfm: true, breaks: true }));
+        }
+
+        if (window.DOMPurify && typeof window.DOMPurify.sanitize === "function") {
+          return String(window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true, mathMl: true } }));
+        }
+        return rawHtml.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "");
+      }
+
+      function ensureMarkdownMeasureHost() {
+        if (markdownMeasureHostEl && document.body.contains(markdownMeasureHostEl)) {
+          return markdownMeasureHostEl;
+        }
+        const host = document.createElement("div");
+        host.style.position = "fixed";
+        host.style.left = "-99999px";
+        host.style.top = "0";
+        host.style.visibility = "hidden";
+        host.style.pointerEvents = "none";
+        host.style.zIndex = "-1";
+        host.style.width = "320px";
+        document.body.appendChild(host);
+        markdownMeasureHostEl = host;
+        return host;
+      }
+
+      function measureMarkdownHtmlBox(html, width) {
+        const nextWidth = Math.max(280, Math.floor(width || 360));
+        const host = ensureMarkdownMeasureHost();
+        host.style.width = `${nextWidth}px`;
+        host.innerHTML = `<style>${MARKDOWN_RENDER_THEME_CSS}</style><article class="md-render-root">${html}</article>`;
+        const article = host.querySelector(".md-render-root");
+        const height = Math.max(120, Math.ceil((article ? article.scrollHeight : host.scrollHeight) + 4));
+        host.innerHTML = "";
+        return { width: nextWidth, height };
+      }
+
+      function buildMarkdownSvgDataUrl(html, width, height) {
+        const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <foreignObject x="0" y="0" width="${width}" height="${height}">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <style>${escapeXml(MARKDOWN_RENDER_THEME_CSS)}</style>
+      <article class="md-render-root">${html}</article>
+    </div>
+  </foreignObject>
+</svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+
+      function getMarkdownSourceById(sourceId) {
+        if (!board || !sourceId) return null;
+        return (
+          board
+            .getObjects()
+            .find((obj) => obj && obj.isMarkdownSource === true && obj.markdownSourceId === sourceId) || null
+        );
+      }
+
+      function getMarkdownRenderBySourceId(sourceId) {
+        if (!board || !sourceId) return null;
+        return (
+          board
+            .getObjects()
+            .find((obj) => obj && obj.isMarkdownRender === true && obj.markdownSourceId === sourceId) || null
+        );
+      }
+
+      function removeMarkdownRenderObjectsForSource(sourceId, { internal = false } = {}) {
+        if (!board || !sourceId) return;
+        const staleObjects = board
+          .getObjects()
+          .filter((obj) => obj && obj.isMarkdownRender === true && obj.markdownSourceId === sourceId);
+        staleObjects.forEach((obj) => {
+          if (internal) obj.__mdInternalRemove = true;
+          board.remove(obj);
+        });
+      }
+
+      function bumpMarkdownRenderVersion(sourceId) {
+        const nextVersion = Number(markdownRenderVersionBySourceId.get(sourceId) || 0) + 1;
+        markdownRenderVersionBySourceId.set(sourceId, nextVersion);
+        return nextVersion;
+      }
+
+      function syncMarkdownSourceGeometryFromRender(source, renderObj) {
+        if (!source || !renderObj) return;
+        const scaledWidth =
+          typeof renderObj.getScaledWidth === "function"
+            ? Number(renderObj.getScaledWidth() || renderObj.width || 360)
+            : Number(renderObj.width || 360);
+        source.set({
+          left: Number(renderObj.left || 0),
+          top: Number(renderObj.top || 0),
+          angle: Number(renderObj.angle || 0),
+          scaleX: 1,
+          scaleY: 1,
+          width: Math.max(220, Math.round(scaledWidth)),
+        });
+        source.setCoords();
+      }
+
+      function bindMarkdownRenderEvents(renderObj) {
+        if (!renderObj || renderObj.isMarkdownRender !== true || renderObj.__mdEventsBound) return;
+        renderObj.__mdEventsBound = true;
+        renderObj.on("mousedblclick", () => {
+          const source = getMarkdownSourceById(renderObj.markdownSourceId);
+          if (!source) return;
+          syncMarkdownSourceGeometryFromRender(source, renderObj);
+          setMarkdownSourceEditMode(source, { focus: true });
+        });
+        renderObj.on("modified", () => {
+          const source = getMarkdownSourceById(renderObj.markdownSourceId);
+          if (!source) return;
+          syncMarkdownSourceGeometryFromRender(source, renderObj);
+        });
+      }
+
+      function renderMarkdownSourceToRight(source, { announce = false } = {}) {
+        if (!board || !window.fabric || !source || source.isMarkdownSource !== true) return;
+        if (!board.getObjects().includes(source)) return;
+
+        const sourceId = getOrAssignMarkdownSourceId(source);
+        const renderVersion = bumpMarkdownRenderVersion(sourceId);
+        const markdownText = String(source.text || "");
+        const safeHtml = markdownToSafeHtml(markdownText.trim() ? markdownText : "_(Markdownを入力してください)_");
+        const sourceWidth =
+          typeof source.getScaledWidth === "function"
+            ? Number(source.getScaledWidth() || source.width || 360)
+            : Number(source.width || 360);
+        const renderWidth = Math.min(960, Math.max(300, Math.floor(sourceWidth)));
+        const boxSize = measureMarkdownHtmlBox(safeHtml, renderWidth);
+        const baseLeft = Number(source.left || 0);
+        const baseTop = Number(source.top || 0);
+        const svgDataUrl = buildMarkdownSvgDataUrl(safeHtml, boxSize.width, boxSize.height);
+
+        window.fabric.Image.fromURL(
+          svgDataUrl,
+          (image) => {
+            if (!board || !board.getObjects().includes(source)) return;
+            if (Number(markdownRenderVersionBySourceId.get(sourceId) || 0) !== renderVersion) return;
+
+            removeMarkdownRenderObjectsForSource(sourceId, { internal: true });
+            image.set({
+              left: baseLeft,
+              top: baseTop,
+              angle: Number(source.angle || 0),
+              isMarkdownRender: true,
+              markdownSourceId: sourceId,
+              selectable: true,
+              evented: true,
+              visible: source.__mdViewMode !== "edit",
+            });
+            bindMarkdownRenderEvents(image);
+            applyBoardObjectStyle(image);
+            board.add(image);
+
+            if (source.__mdViewMode !== "edit") {
+              source.set({
+                visible: false,
+                selectable: false,
+                evented: false,
+              });
+            } else {
+              image.set({
+                visible: false,
+                selectable: false,
+                evented: false,
+              });
+            }
+
+            source.setCoords();
+            image.setCoords();
+            board.requestRenderAll();
+            if (announce) {
+              appendEvent("Markdownをレンダリングしました。");
+            }
+          },
+          { crossOrigin: "anonymous" }
+        );
+      }
+
+      function setMarkdownSourceEditMode(source, { focus = true } = {}) {
+        if (!board || !source || source.isMarkdownSource !== true) return;
+        const sourceId = getOrAssignMarkdownSourceId(source);
+        const preview = getMarkdownRenderBySourceId(sourceId);
+        source.__mdViewMode = "edit";
+        source.set({
+          visible: true,
+          selectable: true,
+          evented: true,
+          editable: true,
+        });
+        if (preview) {
+          syncMarkdownSourceGeometryFromRender(source, preview);
+          preview.set({
+            visible: false,
+            selectable: false,
+            evented: false,
+          });
+        }
+        board.setActiveObject(source);
+        source.setCoords();
+        if (focus && typeof source.enterEditing === "function") {
+          source.enterEditing();
+          if (typeof source.selectAll === "function") {
+            source.selectAll();
+          }
+        }
+        board.requestRenderAll();
+      }
+
+      function setMarkdownSourcePreviewMode(source, { announce = false } = {}) {
+        if (!board || !source || source.isMarkdownSource !== true) return;
+        source.__mdViewMode = "preview";
+        if (source.isEditing && typeof source.exitEditing === "function") {
+          source.exitEditing();
+        }
+        renderMarkdownSourceToRight(source, { announce });
+      }
+
+      function bindMarkdownSourceEvents(source) {
+        if (!source || source.isMarkdownSource !== true || source.__mdEventsBound) return;
+        source.__mdEventsBound = true;
+        source.on("editing:entered", () => {
+          source.__mdViewMode = "edit";
+          const preview = getMarkdownRenderBySourceId(source.markdownSourceId);
+          if (preview) {
+            preview.set({
+              visible: false,
+              selectable: false,
+              evented: false,
+            });
+            board.requestRenderAll();
+          }
+        });
+        source.on("editing:exited", () => {
+          setMarkdownSourcePreviewMode(source);
+        });
+        source.on("modified", () => {
+          renderMarkdownSourceToRight(source);
+        });
+        source.on("deselected", () => {
+          if (source.__mdViewMode === "edit") {
+            setMarkdownSourcePreviewMode(source);
+          }
+        });
+        source.on("changed", () => {
+          if (source.__mdRenderTimer) {
+            window.clearTimeout(source.__mdRenderTimer);
+          }
+          source.__mdRenderTimer = window.setTimeout(() => {
+            renderMarkdownSourceToRight(source);
+          }, 260);
+        });
+      }
+
+      function initializeMarkdownRenderingHooks() {
+        if (!board) return;
+        const objects = board.getObjects().slice();
+        const markdownSources = [];
+
+        objects.forEach((obj) => {
+          if (!obj) return;
+          if (obj.isMarkdownSource === true) {
+            getOrAssignMarkdownSourceId(obj);
+            bindMarkdownSourceEvents(obj);
+            markdownSources.push(obj);
+            return;
+          }
+          if (obj.isMarkdownRender === true) {
+            obj.__mdInternalRemove = true;
+            board.remove(obj);
+          }
+        });
+
+        markdownSources.forEach((source) => {
+          setMarkdownSourcePreviewMode(source);
+        });
+      }
+
+      function addMarkdownBox() {
+        if (!board || !window.fabric) return;
+
+        const center = getViewportCenterWorldPoint();
+        const markdownTemplate = [
+          "# Markdownメモ",
+          "",
+          "> ここにMarkdownを書くと右側にプレビューします",
+          "",
+          "- 箇条書き",
+          "- **太字** と `inline code`",
+          "",
+          "$\\frac{\\partial f}{\\partial a}$, $\\frac{\\partial f}{\\partial b}$",
+          "",
+          "```python",
+          "print('hello markdown')",
+          "```",
+          "",
+          "| 項目 | 値 |",
+          "| --- | --- |",
+          "| 例 | 123 |",
+        ].join("\n");
+
+        const markdownBox = new window.fabric.Textbox(markdownTemplate, {
+          left: center.x - 220,
+          top: center.y - 80,
+          width: 360,
+          fontSize: 18,
+          fontFamily: "Menlo, Monaco, monospace",
+          fontWeight: "500",
+          fill: "#0f172a",
+          lineHeight: 1.28,
+          backgroundColor: "rgba(255,255,255,0.92)",
+          borderColor: "#0284c7",
+          cornerColor: "#0284c7",
+          cornerStyle: "circle",
+          transparentCorners: false,
+          editable: true,
+          isMarkdownSource: true,
+          markdownSourceId: buildMarkdownSourceId(),
+        });
+
+        bindMarkdownSourceEvents(markdownBox);
+        applyBoardObjectStyle(markdownBox);
+        board.add(markdownBox);
+        setMarkdownSourceEditMode(markdownBox, { focus: true });
+        renderMarkdownSourceToRight(markdownBox, { announce: true });
+        setCanvasMode("select");
+        updateCanvasHint();
+      }
+
       function addImageToBoard(file) {
         if (!board || !window.fabric || !file.type.startsWith("image/")) return;
 
@@ -2271,7 +2872,7 @@ print("done")
         const payload = {
           schemaVersion: 1,
           exportedAt: new Date().toISOString(),
-          board: board.toDatalessJSON(["selectable", "evented", "editable"]),
+          board: board.toDatalessJSON(BOARD_SERIALIZE_PROPERTIES),
         };
         const jsonText = JSON.stringify(payload, null, 2);
         const blob = new Blob([jsonText], { type: "application/json" });
@@ -2300,6 +2901,7 @@ print("done")
               applyBoardObjectStyle(obj);
               obj.setCoords();
             });
+            initializeMarkdownRenderingHooks();
             setCanvasMode("select");
             applyCanvasZoom(1);
             board.requestRenderAll();
@@ -2344,8 +2946,55 @@ print("done")
         board.freeDrawingBrush.color = "#2c65f5";
         board.freeDrawingBrush.width = Number(brushSizeInput.value || 4);
 
-        board.on("object:added", updateCanvasHint);
-        board.on("object:removed", updateCanvasHint);
+        board.on("object:added", (event) => {
+          const target = event && event.target ? event.target : null;
+          if (target && target.isMarkdownSource === true) {
+            bindMarkdownSourceEvents(target);
+          }
+          updateCanvasHint();
+        });
+        board.on("object:removed", (event) => {
+          const target = event && event.target ? event.target : null;
+          if (target && target.isMarkdownSource === true) {
+            const sourceId = getOrAssignMarkdownSourceId(target);
+            if (target.__mdRenderTimer) {
+              window.clearTimeout(target.__mdRenderTimer);
+              target.__mdRenderTimer = null;
+            }
+            markdownRenderVersionBySourceId.delete(sourceId);
+            removeMarkdownRenderObjectsForSource(sourceId, { internal: true });
+            updateCanvasHint();
+            return;
+          }
+          if (target && target.isMarkdownRender === true) {
+            if (target.__mdInternalRemove === true) {
+              target.__mdInternalRemove = false;
+              updateCanvasHint();
+              return;
+            }
+            const sourceId =
+              typeof target.markdownSourceId === "string" ? target.markdownSourceId.trim() : "";
+            if (sourceId) {
+              markdownRenderVersionBySourceId.delete(sourceId);
+              const source = getMarkdownSourceById(sourceId);
+              if (source) {
+                board.remove(source);
+              }
+            }
+          }
+          updateCanvasHint();
+        });
+        board.on("mouse:dblclick", (event) => {
+          const target = event && event.target ? event.target : null;
+          if (!target || target.isMarkdownRender !== true) return;
+          const sourceId =
+            typeof target.markdownSourceId === "string" ? target.markdownSourceId.trim() : "";
+          if (!sourceId) return;
+          const source = getMarkdownSourceById(sourceId);
+          if (!source) return;
+          syncMarkdownSourceGeometryFromRender(source, target);
+          setMarkdownSourceEditMode(source, { focus: true });
+        });
         board.on("path:created", updateCanvasHint);
 
         resizeBoardToWrapper();
@@ -2358,6 +3007,10 @@ print("done")
         const files = Array.from(event.target.files || []);
         files.forEach(addImageToBoard);
         event.target.value = "";
+      });
+
+      addMarkdownBtn.addEventListener("click", () => {
+        addMarkdownBox();
       });
 
       addTextBtn.addEventListener("click", () => {
